@@ -1,0 +1,153 @@
+#!/usr/bin/python
+import os
+import sys
+import rnamotifs2
+import pybio
+import pickle
+import random
+import glob
+random.seed(42)
+
+web_folder = None
+web_folder = "https://apa-db.org/rnamotifs2"
+
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('-comps', action="store", dest="comps", default=None)
+args = parser.parse_args()
+
+comps_folder = os.path.join(rnamotifs2.path.comps_folder, args.comps)
+rnamotifs2.data.read(args.comps)
+rnamotifs2.sequence.load(args.comps)
+
+num_s, num_e, num_c = rnamotifs2.data.dist["s"], rnamotifs2.data.dist["e"], rnamotifs2.data.dist["c"]
+print num_s, num_e, num_c
+
+configs = {}
+for region in ["r1s", "r1e", "r2s", "r2e", "r3s", "r3e"]:
+    trees = glob.glob(os.path.join(comps_folder, region, "tree*.tab"))
+    trees.sort()
+    for index, tree_fname in enumerate(trees):
+        print region, tree_fname
+        fisher, h, motif_cluster = rnamotifs2.draw.read_tree(tree_fname)
+        areas, h, stats = rnamotifs2.search.areas_apa(args.comps, motif=motif_cluster, h=h)
+        configs.setdefault(region, []).append((fisher, h, motif_cluster, areas))
+
+areas, h, stats = rnamotifs2.search.areas_apa(args.comps, motif=["TGT", "GTG"])
+configs.setdefault("r4", []).append((None, h, ["TGT", "GTG"], areas))
+
+if not os.path.exists(os.path.join(comps_folder, "rnamap")):
+    os.makedirs(os.path.join(comps_folder, "rnamap"))
+
+# draw motifs
+f = open(os.path.join(comps_folder, "rnamap", "index.html"), "wt")
+f.write("<html>\n")
+
+head = """<head>
+<script type="text/javascript" src="%s/highslide/highslide/highslide.js"></script>
+<link rel="stylesheet" type="text/css" href="%s/highslide/highslide/highslide.css" />
+<script type="text/javascript">
+    hs.graphicsDir = '%s/highslide/highslide/graphics/';
+    hs.showCredits = false;
+</script>
+
+<style>
+
+.highslide img {
+   border: 0px;
+   outline: none;
+}
+
+a {
+    text-decoration: none;
+}
+
+.my-tips {
+	border-radius: 5px;
+	border: 0.5px solid #000;
+	background: #6c6c6c;
+	color: #fff;
+}
+
+/* Use this next selector to style things like font-size and line-height: */
+.my-tips .tooltipster-content {
+	font-family: Arial, sans-serif;
+	font-size: 12px;
+	line-height: 13px;
+	padding: 2px 3px;
+}
+</style>
+
+</head>""" % (web_folder, web_folder, web_folder)
+
+f.write(head+"\n")
+
+f.write("<body>\n")
+f.write("<table style='border-collapse: collapse; border-spacing: 0px; font-size: 12px;'><tr><td align=center>motif cluster</td><td align=center width=15px>R1</td><td align=center width=15px>R2</td><td align=center width=15px>R3</td><td align=center>-100..100 (0=cleavage site)</td></tr>\n")
+
+# find upper limit for ES
+max_es = 0
+
+for region, tree_list in configs.items():
+    for tree in tree_list:
+        fisher, h, motif_list, area = tree
+        for a in range(0, 1):
+            logs, loge = rnamotifs2.compute.es_apa(area["s"], area["e"], area["c"])
+            max_es = max(max_es, max(pybio.utils.smooth(logs[a])), max(pybio.utils.smooth(loge[a])))
+
+for region, tree_list in configs.items():
+    for index, tree in enumerate(tree_list):
+        fisher, h, motif_list, area = tree
+        for a in range(0, 1):
+            logs, loge = rnamotifs2.compute.es_apa(area["s"], area["e"], area["c"])
+            image_filename = "%s_tree%s_area%s" % (region, index, a+1)
+            draw_sum = rnamotifs2.draw.area_apa(", ".join(motif_list), logs[a], loge[a], os.path.join(comps_folder, "rnamap", image_filename), area=a, region=region, limy=max_es)
+
+regions = configs.keys()
+regions.sort()
+
+for region in regions:
+    tree_list = configs[region]
+    for index, tree in enumerate(tree_list):
+        if web_folder!=None:
+            tree_file = "%s/%s/%s/%s" % (web_folder, args.comps, region, "tree%s.tab" % index)
+        else:
+            tree_file = "../%s/%s" % (region, "tree%s.tab" % index)
+        fisher, h, motif_list, area = tree
+        f.write("<tr>")
+        if fisher!=None:
+            f.write("<td align=right valign=center width=30px>%s<br><a href=%s target=_new>tree=%s</a><br>h=%s</td>" % ("_".join(motif_list), tree_file, index, h))
+        else:
+            f.write("<td align=right valign=center width=30px>%s<br>added<br>h=%s</td>" % ("_".join(motif_list), h))
+        for r in ["r1", "r2", "r3"]:
+            if region[:-1]==r:
+                if region[-1]=="e":
+                    color = "#ff0000"
+                else:
+                    color = "#0000ff"
+            else:
+                color = "#aaaaaa"
+            title = ""
+            f.write("<td valign=center align=center width=15px>")
+            if fisher!=None:
+                f.write("<svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='18px' height='18px'>")
+                cid = ""
+                f.write("<circle id='%s' %s cx=9 cy=9 r=7 stroke=#ffffff stroke-width=1 fill='%s'/>" % (cid, title, color))
+                f.write("</svg>")
+            f.write("</td>")
+        for a in range(0, 1):
+            f.write("<td>")
+            if web_folder==None:
+                image_filename = "%s_tree%s_area%s" % (region, index, a+1)
+            else:
+                image_filename_temp = "%s_tree%s_area%s" % (region, index, a+1)
+                image_filename = "%s/%s/rnamap/%s" % (web_folder, args.comps, image_filename_temp)
+            f.write("<a href=%s class='highslide' onclick='return hs.expand(this)'><img src=%s width=350></a>" % (image_filename, image_filename))
+            f.write("</td>")
+        f.write("</tr>")
+f.write("\n")
+f.write("</table>")
+
+f.write("</body>")
+f.write("</html>\n")
+f.close()

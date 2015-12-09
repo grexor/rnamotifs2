@@ -1,0 +1,64 @@
+#!/usr/bin/python
+import os
+import sys
+import rnamotifs2
+import pybio
+import pickle
+import copy
+from collections import Counter
+
+comps = sys.argv[1]
+genome = sys.argv[2]
+region = sys.argv[3]
+motif = sys.argv[4].split("_")
+cn = int(sys.argv[5])
+cmotif = sys.argv[6].split("_")
+pth = float(sys.argv[7])
+sf = sys.argv[8]
+search_motif = motif + cmotif
+
+def read_base_motif(comps, region, cn):
+    comps_folder = os.path.join(rnamotifs2.path.comps_folder, comps)
+    region_folder = os.path.join(comps_folder, region)
+    rfile = os.path.join(region_folder, "results%s.tab" % cn)
+    if os.path.exists(rfile):
+        f = open(os.path.join(region_folder, "results%s.tab" % cn), "rt")
+        r = f.readline()
+        r = f.readline().replace("\n", "").replace("\r", "").split("\t")
+        return r[0], int(r[1]) # base_motif, base_h
+    else:
+        return None, None
+
+comps_folder = os.path.join(rnamotifs2.path.comps_folder, comps)
+pickle_folder = os.path.join(comps_folder, region, "pickle")
+if not os.path.exists(pickle_folder):
+    os.makedirs(pickle_folder)
+
+rnamotifs2.data.read(comps)
+rnamotifs2.perm.compute(comps, genome, motif)
+rnamotifs2.sequence.load(comps)
+
+print "%s.%s.%s: processing; cmotif=%s" % (comps, genome, motif, cmotif)
+
+rfilter = {}
+# unfiltered data (compute or simply load)
+
+if len(cmotif)==1:
+    pickle_filename = os.path.join(pickle_folder, "c%s.%s.pickle" % (cn, "_".join(cmotif)))
+else:
+    pickle_filename = os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn, cmotif[0], "_".join(sorted(cmotif[1:]))))
+
+# get already filtered data
+_, _, _, rfilter, _, _, _ = pickle.load(open(pickle_filename))
+        
+step = len(cmotif)
+base_motif, base_h = read_base_motif(comps, region, cn)
+print "base_motif=%s, motif_h=%s" % (base_motif, base_h)
+
+m = getattr(rnamotifs2.search, sf)
+results = m(comps, genome, region=region, motif=search_motif, rfilter=rfilter, step=step, pth=pth, base_motif=base_motif, base_h=base_h)
+if results!=None:
+    area, rcounts, h, rfilter, nums, present = results
+    test_result = rnamotifs2.compute.rtest(comps, genome, search_motif, rcounts, nums)
+    pickle_filename = os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn, "_".join(motif), "_".join(sorted(cmotif))))
+    pickle.dump((area, test_result, h, rfilter, nums, rcounts, present), open(pickle_filename, "wb"))

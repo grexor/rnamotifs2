@@ -1,0 +1,87 @@
+#!/usr/bin/python
+import os
+import sys
+import rnamotifs2
+import pybio
+import pickle
+import random
+import operator
+random.seed(42)
+
+comps = sys.argv[1]
+genome = sys.argv[2]
+region = sys.argv[3]
+cn = int(sys.argv[4])
+
+comps_folder = os.path.join(rnamotifs2.path.comps_folder, comps)
+region_folder = os.path.join(comps_folder, region)
+comps_filename = os.path.join(comps_folder, "%s.tab" % comps)
+pickle_folder = os.path.join(region_folder, "pickle")
+
+motifs = rnamotifs2.get_motifs()
+
+test_results = {}
+rtest_results = {}
+h = {}
+index = 0
+for motif in motifs:
+    pickle_filename = os.path.join(pickle_folder, "c%s.%s.pickle" % (cn, "_".join(sorted(motif.split("_")))))
+    if not os.path.exists(pickle_filename):
+        continue
+    index += 1
+    print "%s.%s: loading %s (%s)" % (comps, genome, "_".join(motif.split("_")), index)
+    _, test_results[motif], h[motif], _, _, _, _ = pickle.load(open(pickle_filename))
+
+# FDR
+"""
+print "%s.%s: correct p-values" % (comps, genome)
+for rt in ["r1", "r2", "r3"]:
+    for event_class in ["s", "e"]:
+        # fdr correct p-value
+        temp = []
+        for motif in motifs_all:
+            motif = "_".join(motif)
+            temp.append(test_results[motif]["%s.%s" % (rt, event_class)][0])
+        temp = rnamotifs2.fdr(temp)
+        for index, motif in enumerate(motifs_all):
+            motif = "_".join(motif)
+            test_results[motif]["%s.%s" % (rt, event_class)][0] = temp[index]
+
+        # fdr correct bootstrapped p-values
+        temp = []
+        for p in range(0, rnamotifs2.config.perms):
+            temp.append([])
+        for p in range(0, rnamotifs2.config.perms):
+            for motif in motifs_all:
+                motif = "_".join(motif)
+                temp[p].append(test_results[motif]["%s.%s" % (rt, event_class)][1][p])
+        for p in range(0, rnamotifs2.config.perms):
+            temp[p] = rnamotifs2.fdr(temp[p])
+            for index, motif in enumerate(motifs_all):
+                motif = "_".join(motif)
+                test_results[motif]["%s.%s" % (rt, event_class)][1][p] = temp[p][index]
+"""
+
+data = []
+for motif in motifs:
+    # some motifs were not considered
+    if test_results.get(motif, None)==None:
+        continue
+    row = [motif, h[motif]]
+    fisher, p_emp, ig = test_results[motif]
+    p_emp = [1 if x<=fisher else 0 for x in p_emp]
+    p_emp = sum(p_emp)
+    p_emp = (1+p_emp)/float(1+rnamotifs2.config.perms)
+    row.append(fisher)
+    row.append(ig)
+    row.append(ig)
+    row.append(p_emp)
+    data.append(row)
+
+data = sorted(data, key = operator.itemgetter(2))
+f = open(os.path.join(region_folder, "results%s.tab" % cn), "wt")
+header = ["motif", "h", "fisher", "ig", "raw_ig", "p_emp"]
+f.write("\t".join(header)+"\n")
+for row in data:
+    f.write("\t".join(str(x) for x in row)+"\n")
+f.close()

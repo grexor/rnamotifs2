@@ -1,0 +1,66 @@
+#!/usr/bin/python
+import os
+import sys
+import rnamotifs2
+import pybio
+import pickle
+import copy
+from collections import Counter
+
+comps = sys.argv[1]
+genome = sys.argv[2]
+region = sys.argv[3]
+motif = sys.argv[4].split("_")
+pth = float(sys.argv[5])
+cn = int(sys.argv[6])
+sf = sys.argv[7]
+
+search_motif = motif
+
+comps_folder = os.path.join(rnamotifs2.path.comps_folder, comps)
+pickle_folder = os.path.join(comps_folder, region, "pickle")
+if not os.path.exists(pickle_folder):
+    os.makedirs(pickle_folder)
+
+rnamotifs2.data.read(comps)
+rnamotifs2.perm.compute(comps, genome, motif)
+rnamotifs2.sequence.load(comps)
+
+print "%s.%s.%s: processing; pth=%s" % (comps, genome, motif, pth)
+
+# get filtered exons from previous cluster
+if cn>0:
+    f = open(os.path.join(comps_folder, region, "tree%s.tab" % (cn-1)), "rt")
+    header = f.readline().replace("\r", "").replace("\n", "").split("\t")
+    r = f.readline()
+    m1, m2, c = None, None, 0
+    while r:
+        r = r.replace("\r", "").replace("\n", "").split("\t")
+        c+=1
+        data = dict(zip(header, r))
+        if float(data["fisher"])>0.01 and c==1:
+            m1 = data["motif"].split("_")
+            m2 = data["cmotif"].split("_")
+            break
+        if float(data["fisher"])>0.01 and c>1:
+            break
+        m1 = data["motif"].split("_")
+        m2 = data["cmotif"].split("_")
+        r = f.readline()
+    f.close()
+    if m2!=['']:
+        pickle_filename = os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn-1, m1[0], "_".join(sorted(m2))))
+    else:
+        pickle_filename = os.path.join(pickle_folder, "c%s.%s.pickle" % (cn-1, m1[0]))
+    _, _, _, rfilter, _, _, _ = pickle.load(open(pickle_filename))
+else:
+    rfilter = {}
+m = getattr(rnamotifs2.search, sf)
+
+results = m(comps, genome, region=region, motif=search_motif, rfilter=rfilter, step=0, pth=pth)
+# only save motif results if we have a result :)
+if results!=None:
+    area, rcounts, h, rfilter, nums, present = results
+    test_result = rnamotifs2.compute.rtest(comps, genome, search_motif, rcounts, nums)
+    pickle_filename = os.path.join(pickle_folder, "c%s.%s.pickle" % (cn, "_".join(sorted(search_motif))))
+    pickle.dump((area, test_result, h, rfilter, nums, rcounts, present), open(pickle_filename, "wb"))

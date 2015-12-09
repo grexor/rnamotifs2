@@ -1,0 +1,14 @@
+#!/usr/bin/python
+import os
+import sys
+import rnamotifs2
+import pybio
+
+comps = sys.argv[1]
+genome = sys.argv[2]
+region = sys.argv[3]
+cn = int(sys.argv[4])
+pth = float(sys.argv[5])
+sf = sys.argv[6]
+
+rnamotifs2.cluster.next_cluster(comps, genome, region, cn, pth=pth, sf=sf)
