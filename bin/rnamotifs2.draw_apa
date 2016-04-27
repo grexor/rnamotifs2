@@ -9,7 +9,7 @@ import glob
 random.seed(42)
 
 web_folder = None
-web_folder = "https://apa-db.org/rnamotifs2"
+web_folder = "/rnamotifs2"
 
 import argparse
 parser = argparse.ArgumentParser()
@@ -82,16 +82,19 @@ a {
 
 f.write(head+"\n")
 
-f.write("<body>\n")
-f.write("<table style='border-collapse: collapse; border-spacing: 0px; font-size: 12px;'><tr><td align=center>motif cluster</td><td align=center width=15px>R1</td><td align=center width=15px>R2</td><td align=center width=15px>R3</td><td align=center>-100..100 (0=cleavage site)</td></tr>\n")
+f.write("<body>\n<center>")
+f.write("<table style='border-collapse: collapse; border-spacing: 0px; font-size: 12px;'><tr><td align=center width=15px></td><td align=center width=15px></td><td align=center width=15px></td><td align=center></td></tr>\n")
 
 # find upper limit for ES
 max_es = 0
-
 for region, tree_list in configs.items():
     for tree in tree_list:
         fisher, h, motif_list, area = tree
         for a in range(0, 1):
+            if area.get("s", None)==None:
+                area["s"] = [0] * 201
+            if area.get("e", None)==None:
+                area["e"] = [0] * 201
             logs, loge = rnamotifs2.compute.es_apa(area["s"], area["e"], area["c"])
             max_es = max(max_es, max(pybio.utils.smooth(logs[a])), max(pybio.utils.smooth(loge[a])))
 
@@ -99,9 +102,14 @@ for region, tree_list in configs.items():
     for index, tree in enumerate(tree_list):
         fisher, h, motif_list, area = tree
         for a in range(0, 1):
+            if area.get("s", None)==None:
+                area["s"] = [0] * 201
+            if area.get("e", None)==None:
+                area["e"] = [0] * 201
             logs, loge = rnamotifs2.compute.es_apa(area["s"], area["e"], area["c"])
             image_filename = "%s_tree%s_area%s" % (region, index, a+1)
-            draw_sum = rnamotifs2.draw.area_apa(", ".join(motif_list), logs[a], loge[a], os.path.join(comps_folder, "rnamap", image_filename), area=a, region=region, limy=max_es)
+            print fisher
+            draw_sum = rnamotifs2.draw.area_apa("+".join(motif_list), logs[a], loge[a], os.path.join(comps_folder, "rnamap", image_filename), area=a, region=region, limy=max_es, fisher=fisher)
 
 regions = configs.keys()
 regions.sort()
@@ -115,10 +123,6 @@ for region in regions:
             tree_file = "../%s/%s" % (region, "tree%s.tab" % index)
         fisher, h, motif_list, area = tree
         f.write("<tr>")
-        if fisher!=None:
-            f.write("<td align=right valign=center width=30px>%s<br><a href=%s target=_new>tree=%s</a><br>h=%s</td>" % ("_".join(motif_list), tree_file, index, h))
-        else:
-            f.write("<td align=right valign=center width=30px>%s<br>added<br>h=%s</td>" % ("_".join(motif_list), h))
         for r in ["r1", "r2", "r3"]:
             if region[:-1]==r:
                 if region[-1]=="e":
@@ -136,15 +140,20 @@ for region in regions:
                 f.write("</svg>")
             f.write("</td>")
         for a in range(0, 1):
-            f.write("<td>")
+            f.write("<td align=center>")
             if web_folder==None:
                 image_filename = "%s_tree%s_area%s" % (region, index, a+1)
             else:
                 image_filename_temp = "%s_tree%s_area%s" % (region, index, a+1)
                 image_filename = "%s/%s/rnamap/%s" % (web_folder, args.comps, image_filename_temp)
-            f.write("<a href=%s class='highslide' onclick='return hs.expand(this)'><img src=%s width=350></a>" % (image_filename, image_filename))
+            if fisher!=None:
+                f.write("%s (<a href=%s target=_new>tree=%s</a>, h=%s)<br>" % ("+".join(motif_list), tree_file, index, h))
+            else:
+                f.write("%s (added)<br>" % "+".join(motif_list))
+            f.write("<a href=%s class='highslide' onclick='return hs.expand(this)'><img src=%s.png width=350></a>" % (image_filename, image_filename))
             f.write("</td>")
         f.write("</tr>")
+        f.write("<tr style='height:10px;'>")
 f.write("\n")
 f.write("</table>")
 

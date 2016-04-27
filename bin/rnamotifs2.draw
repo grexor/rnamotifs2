@@ -108,7 +108,7 @@ for region, tree_list in configs.items():
         logs, loge = rnamotifs2.compute.es(area["s"], area["e"], area["c"])
         for a in range(0, 4):
             image_filename = "%s_tree%s_area%s" % (region, index, a+1)
-            draw_sum = rnamotifs2.draw.area(", ".join(motif_list), logs[a], loge[a], os.path.join(comps_folder, "rnamap", image_filename), area=a, region=region, limy=max_es, stats=stats)
+            draw_sum = rnamotifs2.draw.area("+".join(motif_list), logs[a], loge[a], os.path.join(comps_folder, "rnamap", image_filename), area=a, region=region, limy=max_es, stats=stats)
 
 regions = configs.keys()
 regions.sort()
@@ -129,7 +129,7 @@ for region in regions:
             continue
 
         f.write("<tr>")
-        f.write("<td align=right valign=center width=30px>%s<br><a href=%s target=_new>tree=%s</a><br>h=%s</td>" % ("_".join(motif_list), tree_file, index, h))
+        f.write("<td align=right valign=center width=30px>%s<br><a href=%s target=_new>tree=%s</a><br>h=%s</td>" % ("+".join(motif_list), tree_file, index, h))
         for r in ["r1", "r2", "r3"]:
             if region[:-1]==r:
                 if region[-1]=="e":
@@ -147,7 +147,7 @@ for region in regions:
             f.write("</td>")
         for a in range(0, 4):
             f.write("<td>")
-            image_filename = "%s_tree%s_area%s" % (region, index, a+1)
+            image_filename = "%s_tree%s_area%s.png" % (region, index, a+1)
             f.write("<a href=%s class='highslide' onclick='return hs.expand(this)'><img src=%s width=250></a>" % (image_filename, image_filename))
             f.write("</td>")
         f.write("</tr>")

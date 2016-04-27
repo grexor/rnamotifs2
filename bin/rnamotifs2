@@ -8,6 +8,7 @@ import glob
 
 comps = sys.argv[1]
 rnamotifs2.data.read_config(comps)
+rnamotifs2.data.read(comps)
 
 # remove all old folders
 folders = glob.glob(os.path.join(rnamotifs2.path.comps_folder, comps, "*"))
@@ -16,6 +17,11 @@ for f in folders:
         shutil.rmtree(f)
 
 for region in ["r1s", "r1e", "r2s", "r2e", "r3s", "r3e"]:
+    # if we don't have silenced / enhanced regions, do not process such comparisons
+    if rnamotifs2.data.dist.get("s", None)==None and region[-1]=="s":
+        continue
+    if rnamotifs2.data.dist.get("e", None)==None and region[-1]=="e":
+        continue
     rnamotifs2.start(comps, region, 0, 4)
 
 if rnamotifs2.data.data_type=="apa":

@@ -41,24 +41,25 @@ def area(motif, s, e, filename, area=None, region=None, limy=None, stats=None):
     c = mcolors.ColorConverter().to_rgb
 
     # styling
-    matplotlib.rcParams['axes.labelsize'] = 17
-    matplotlib.rcParams['axes.titlesize'] = 17
-    matplotlib.rcParams['xtick.labelsize'] = 14
-    matplotlib.rcParams['ytick.labelsize'] = 14
-    matplotlib.rcParams['legend.fontsize'] = 14
-    matplotlib.rc('axes',edgecolor='gray')
+    matplotlib.rcParams['axes.labelsize'] = 30
+    matplotlib.rcParams['axes.titlesize'] = 22
+    matplotlib.rcParams['xtick.labelsize'] = 30
+    matplotlib.rcParams['ytick.labelsize'] = 30
+    matplotlib.rcParams['legend.fontsize'] = 30
+    matplotlib.rc('axes', edgecolor='gray')
     matplotlib.rcParams['axes.linewidth'] = 0.3
     matplotlib.rcParams['legend.frameon'] = 'False'
 
     v = [x+y for x,y in zip(s,e)]
 
-    fig = plt.figure(figsize=(20, 4))
-    a = plt.axes([0.04, 0.15, 0.92, 0.7])
+    fig = plt.figure(figsize=(20, 5))
+    a = plt.axes([0.1, 0.3, 0.8, 0.6])
     a.grid(color="lightgray", linestyle="--", linewidth=0.4)
     a.set_axisbelow(True)
 
     plt.xlabel("distance [nt]")
-    plt.ylabel("-2 * log(p_value)")
+    #plt.ylabel("-2 * log(p_value)")
+    plt.ylabel("enrichment score")
 
     s = pybio.utils.smooth(s)
     e = pybio.utils.smooth(e)
@@ -117,12 +118,13 @@ def area(motif, s, e, filename, area=None, region=None, limy=None, stats=None):
         title = motif
 
     plt.title(title)
-    plt.savefig(filename+".png", dpi=80) #, transparent=True)
-    plt.savefig(filename+".svg")
+    plt.savefig(filename+".png", dpi=80, transparent=True)
+    plt.savefig(filename+".pdf")
     plt.close()
     return sum(v)
 
-def area_apa(motif, s, e, filename, area=None, region=None, limy=None):
+def area_apa(motif, s, e, filename, area=None, region=None, limy=None, fisher=None):
+    print motif
     import matplotlib
     matplotlib.use("Agg", warn=False)
     import matplotlib.pyplot as plt
@@ -137,19 +139,19 @@ def area_apa(motif, s, e, filename, area=None, region=None, limy=None):
     c = mcolors.ColorConverter().to_rgb
 
     # styling
-    matplotlib.rcParams['axes.labelsize'] = 17
-    matplotlib.rcParams['axes.titlesize'] = 17
-    matplotlib.rcParams['xtick.labelsize'] = 14
-    matplotlib.rcParams['ytick.labelsize'] = 14
-    matplotlib.rcParams['legend.fontsize'] = 14
-    matplotlib.rc('axes',edgecolor='gray')
+    matplotlib.rcParams['axes.labelsize'] = 30
+    matplotlib.rcParams['axes.titlesize'] = 22
+    matplotlib.rcParams['xtick.labelsize'] = 30
+    matplotlib.rcParams['ytick.labelsize'] = 30
+    matplotlib.rcParams['legend.fontsize'] = 30
+    matplotlib.rc('axes', edgecolor='gray')
     matplotlib.rcParams['axes.linewidth'] = 0.3
     matplotlib.rcParams['legend.frameon'] = 'False'
 
     v = [x+y for x,y in zip(s,e)]
 
     fig = plt.figure(figsize=(20, 4))
-    a = plt.axes([0.04, 0.1, 0.92, 0.7])
+    a = plt.axes([0.04, 0.1, 0.92, 0.75])
 
     a.grid(color="lightgray", linestyle="--", linewidth=0.4)
     a.set_axisbelow(True)
@@ -171,23 +173,27 @@ def area_apa(motif, s, e, filename, area=None, region=None, limy=None):
     plt.xticks([0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200], [-100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100])
 
     if region.startswith("r1"):
-        plt.text(20, limy-2, "R1 [-100, -40]", fontsize=18)
+        plt.text(20, limy-2, "R1 [-100, -40]", fontsize=25)
         p = mpatches.Rectangle([0, 0], 60, 200, color="#FFFF00", alpha=0.1)
         plt.gca().add_patch(p)
 
     if region.startswith("r2"):
-        plt.text(80, limy-2, "R2 [-40, 20]", fontsize=18)
+        plt.text(80, limy-2, "R2 [-40, 20]", fontsize=25)
         p = mpatches.Rectangle([60, 0], 60, 200, color="#FFFF00", alpha=0.1)
         plt.gca().add_patch(p)
 
     if region.startswith("r3"):
-        plt.text(140, limy-2, "R3 [20, 80]", fontsize=18)
+        plt.text(140, limy-2, "R3 [20, 80]", fontsize=25)
         p = mpatches.Rectangle([120, 0], 60, 200, color="#FFFF00", alpha=0.1)
         plt.gca().add_patch(p)
 
-    plt.title(motif)
+    if fisher!=None:
+        plt.title("%s, p-value = %.5f" % (motif, fisher), y=1.06)
+    else:
+        plt.title("%s, p-value = cluster manually added" % (motif))
+
     #plt.tight_layout()
-    plt.savefig(filename+".png", dpi=80) #, transparent=True)
-    plt.savefig(filename+".svg")
+    plt.savefig(filename+".png", dpi=80, transparent=True)
+    plt.savefig(filename+".pdf")
     plt.close()
     return sum(v)
