@@ -44,7 +44,7 @@ def test(comps, genome, motif, rcounts, nums): # rcounts
             num_control = nums.get("%s.%s" % (rt, "c"), 0)
             val = pvalue(val_class, val_control, num_class-val_class, num_control-val_control).right_tail
             results["%s.%s" % (rt, event_class)] = val
-            
+
             # information gain (g at the end)
             i1 = (num_class/float(num_class+num_control))*math.log(num_class/float(num_class+num_control), 2)
             i2 = (num_control/float(num_class+num_control))*math.log(num_control/float(num_class+num_control), 2)
@@ -62,11 +62,11 @@ def test(comps, genome, motif, rcounts, nums): # rcounts
             else:
                 c2_num = 0
             g = i - (c1_num + c2_num)
-            
+
             #print rt, event_class, val_class, num_class
             #print rt, "c", val_control, num_control
             #print
-            
+
             results["%s.%s.g" % (rt, event_class)] = g
             for p in range(0, rnamotifs2.config.perms):
                 val_class = rcounts.get("%s.%s.p%s" % (rt, event_class, p), 0)
@@ -89,13 +89,15 @@ def rtest(comps, genome, motif, rcounts, nums): # rcounts
     print "%s.%s.%s: fisher test on real and perm data" % (comps, genome, motif)
     val_class = rcounts.get("t", 0)
     val_control = rcounts.get("c", 0)
-    num_class = nums.get("t", 0)
-    num_control = nums.get("c", 0)
+    #num_class = nums.get("t.all", 0) # v_18
+    #num_control = nums.get("c.all", 0) # v_18
+    num_class = nums.get("t", 0) # v_17
+    num_control = nums.get("c", 0) # v_17
     num_all = float(num_class+num_control)
     val_all = float(val_class+val_control)
-    
+
     fisher = pvalue(val_class, val_control, num_class-val_class, num_control-val_control).right_tail
-    
+
     # information gain (g at the end)
     i1 = (num_class/num_all)*math.log(num_class/num_all, 2)
     i2 = (num_control/num_all)*math.log(num_control/num_all, 2)
@@ -113,7 +115,7 @@ def rtest(comps, genome, motif, rcounts, nums): # rcounts
     else:
         c2_num = 0
     ig = i - (c1_num + c2_num)
-    
+
     p_emp = []
     for p in range(0, rnamotifs2.config.perms):
         val_class = rcounts.get("%s.p%s" % (event_class, p), 0)

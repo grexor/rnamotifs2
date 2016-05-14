@@ -5,6 +5,7 @@ import operator
 import pickle
 from Queue import Queue
 from threading import Thread
+import pybio
 
 max_steps = 4
 
@@ -68,20 +69,18 @@ def next_cluster(comps, genome, region, cn, pth=0.5, sf="r"):
             motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.start_motifs(comps, region, cn)
         else:
             motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.next_motifs(comps, region, cn, step)
-            if fisher>0.001:
+            if fisher>rnamotifs2.data.cluster_stop_thr:
                 draw(comps, genome, region, cn, steps=step)
-                return
-        
-        # stop tree construction
-        
+                return # stop tree construction
+
         num_worker_threads = 40
-        q = Queue()        
+        q = Queue()
         def worker():
             while True:
                 task = q.get()
                 os.system(task)
-                q.task_done()        
-        tasks = []        
+                q.task_done()
+        tasks = []
         for motif in motifs:
             cluster = motif + cmotif
             pickle_file = os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn, "_".join(sorted(motif)), "_".join(sorted(cmotif))))
@@ -92,16 +91,17 @@ def next_cluster(comps, genome, region, cn, pth=0.5, sf="r"):
             pickle_file = os.path.join(pickle_folder, "c%s.%s.pickle" % (cn, "_".join(sorted(cluster))))
             if not os.path.exists(pickle_file):
                 command = "rnamotifs2.motif %s %s %s %s %s %s %s" % (comps, genome, region, "_".join(cluster), pth, 0, sf)
-                tasks.append(command)        
+                tasks.append(command)
         for i in range(num_worker_threads):
              t = Thread(target=worker)
              t.daemon = True
-             t.start()             
+             t.start()
         for task in tasks:
-            q.put(task)            
+            q.put(task)
         q.join()
+
         assemble(comps, genome, region, cn, step)
-        
+
     draw(comps, genome, region, cn, steps=max_steps)
 
 def assemble(comps, genome, region, cn, step):
@@ -113,7 +113,7 @@ def assemble(comps, genome, region, cn, step):
         motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.start_motifs(comps, region, cn)
     else:
         motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.next_motifs(comps, region, cn, step)
-    
+
     area = {}
     h = {}
     test_results = {}
@@ -146,7 +146,7 @@ def assemble(comps, genome, region, cn, step):
             row_id = ""
         row = ["_".join(motif), "_".join(cmotif), h[k_string], fisher, ig, raw_ig, p_emp]
         data.append(row)
-    
+
     data = sorted(data, key=operator.itemgetter(3))
     f = open(os.path.join(region_folder, "c%s.temp%s.tab" % (cn, step)), "wt")
     header = ["motif", "cmotif", "h", "fisher", "ig", "raw_ig", "p_emp"]
@@ -154,6 +154,11 @@ def assemble(comps, genome, region, cn, step):
     for row in data:
         f.write("\t".join(str(x) for x in row)+"\n")
     f.close()
+
+    # correct for fdr?
+    rnamotifs2.data.read_config(comps)
+    if rnamotifs2.data.use_FDR:
+        pybio.utils.FDR_tab(os.path.join(region_folder, "c%s.temp%s.tab" % (cn, step)), "fisher")
 
 def draw(comps, genome, region, cn, steps=4):
     cluster_region = "t"
@@ -197,12 +202,12 @@ def draw(comps, genome, region, cn, steps=4):
 
         removed_region = 0
         removed_control = 0
-        
+
         if cmotif!=[]:
             _, _, _, _, nums, rcounts, _ = pickle.load(open(os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn, "_".join(sorted(motif)), "_".join(sorted(cmotif))))))
         else:
             _, _, _, _, nums, rcounts, _ = pickle.load(open(os.path.join(pickle_folder, "c%s.%s.pickle" % (cn, "_".join(sorted(motif))))))
-        
+
         # find out where the previous tree was cut
         # and get filtered exons
         if cn>0:
@@ -223,8 +228,8 @@ def draw(comps, genome, region, cn, steps=4):
                 m1 = data["motif"].split("_")
                 m2 = data["cmotif"].split("_")
                 r = f.readline()
-            f.close()            
-            
+            f.close()
+
             if m2!=['']:
                 pickle_filename = os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn-1, m1[0], "_".join(sorted(m2))))
             else:
@@ -232,12 +237,12 @@ def draw(comps, genome, region, cn, steps=4):
             _, _, _, rfilter, _, _, _ = pickle.load(open(pickle_filename))
         else:
             rfilter = {}
-            
+
         if len(cmotif)>1:
             _, _, _, rfilter, _, _, _ = pickle.load(open(os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn, cmotif[0], "_".join(sorted(cmotif[1:]))))))
         elif len(cmotif)==1:
             _, _, _, rfilter, _, _, _ = pickle.load(open(os.path.join(pickle_folder, "c%s.%s.pickle" % (cn, "_".join(cmotif)))))
-            
+
         for k in rfilter.keys():
             if k.startswith("t"):
                 removed_region += 1
@@ -245,7 +250,7 @@ def draw(comps, genome, region, cn, steps=4):
                 removed_control += 1
         row = [step, fisher, ig, raw_ig, h, removed_region, removed_control, rcounts[cluster_region], rcounts[control_region], nums[cluster_region]-rcounts[cluster_region], nums[control_region]-rcounts[control_region], "compute_specificity", "_".join(motif), "_".join(cmotif)]
         data_all.append(row)
-        
+
         # add * to show where the list was cut
         #if follow and fisher>0.01:
         #    if len(data_all)>1:
@@ -260,13 +265,13 @@ def draw(comps, genome, region, cn, steps=4):
         row[11] = num_control*dif_reg / max(1, float(num_region*dif_con)) # specificity
         fout.write("\t".join(str(x) for x in row)+"\n")
     fout.close()
-    
+
     """
     motif = "_".join(selection[-1][-2].split("_") + selection[-1][-1].split("_"))
     row = [cn, region, motif, selection[-1][0], selection[-1][4]]
     f.write("\t".join(str(x) for x in row) + "\n")
     f.close()
-    
+
     # write removed regions
     motif = "_".join(sorted(motif.split("_")))
     filename = os.path.join(pickle_folder, "c%s.removed.pickle" % cluster_number)

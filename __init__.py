@@ -85,7 +85,7 @@ def start_cluster(comps, genome, region, cn, pth, sf):
     q.join()
 
     base_motif_fisher = assemble_results(comps, genome, region, cn)
-    if base_motif_fisher<=0.01:
+    if base_motif_fisher<=rnamotifs2.data.base_motif_thr:
         continue_cluster(comps, genome, region, cn, pth, sf)
     return base_motif_fisher
 
@@ -170,7 +170,21 @@ def assemble_results(comps, genome, region, cn):
         f.write("\t".join(str(x) for x in row)+"\n")
     f.close()
 
-    base_motif_fisher, _, _ = test_results[data[0][0]] # get fisher value of top (base) motif
+    # correct for fdr?
+    rnamotifs2.data.read_config(comps)
+    if rnamotifs2.data.use_FDR:
+        pybio.utils.FDR_tab(os.path.join(region_folder, "results%s.tab" % cn), "fisher")
+        # read the most significant motif fisher value back
+        data = []
+        f = open(os.path.join(region_folder, "results%s.tab" % cn))
+        header = f.readline()
+        r = f.readline().replace("\n", "").replace("\r", "").split("\t")
+        try: # the results file could be empty
+            base_motif_fisher = float(r[2]) # fisher column
+        except:
+            base_motif_fisher = 1 # there are no results
+    else:
+        base_motif_fisher, _, _ = test_results[data[0][0]] # get fisher value of top (base) motif
     return base_motif_fisher
 
 def fdr(pvalues, correction_type = "Benjamini-Hochberg"):

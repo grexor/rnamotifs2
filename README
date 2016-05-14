@@ -1,21 +1,17 @@
-1. Installation instructions for Ubuntu
+RNAmotifs v2.0
 
-* Highslide
+**Dependencies**
 
-    http://highslide.com/download-confirm.php?file=download%2Fhighslide-4.1.13.zip
+Highslide
+  http://highslide.com/download-confirm.php?file=download%2Fhighslide-4.1.13.zip
 
-    Download to "software/highslide" and make symbolic link to "comps" folder.
+twoBitToFa
+	Download from http://hgdownload.cse.ucsc.edu/admin/exe
 
-* twoBitToFa utility:
-
-	download from http://hgdownload.cse.ucsc.edu/admin/exe
-
-* Python to R interface:
-
+Python to R interface
 	apt-get install python-rpy2
 
-* Python Fisher’s test software:
-
+Python Fisher’s test
 	apt-get install python-setuptools
 	apt-get install python-dev
 	easy_install fisher

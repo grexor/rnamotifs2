@@ -50,7 +50,7 @@ else:
 
 # get already filtered data
 _, _, _, rfilter, _, _, _ = pickle.load(open(pickle_filename))
-        
+
 step = len(cmotif)
 base_motif, base_h = read_base_motif(comps, region, cn)
 print "base_motif=%s, motif_h=%s" % (base_motif, base_h)

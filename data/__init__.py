@@ -36,6 +36,16 @@ def read_config(comps):
         continue
     f.close()
 
+    # by default, do not correct for FDR
+    if getattr(m, "use_FDR", None)==None:
+        setattr(m, "use_FDR", False)
+
+    if getattr(m, "base_motif_thr", None)==None:
+        setattr(m, "base_motif_thr", 0.01)
+
+    if getattr(m, "cluster_stop_thr", None)==None:
+        setattr(m, "cluster_stop_thr", 0.001)
+
 def read(comps):
     read_config(comps)
     if data_type=="apa":

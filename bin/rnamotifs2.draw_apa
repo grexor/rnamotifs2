@@ -7,11 +7,11 @@ import pickle
 import random
 import glob
 random.seed(42)
+import argparse
 
 web_folder = None
 web_folder = "/rnamotifs2"
-
-import argparse
+nocache = random.randint(0, 1000000)
 parser = argparse.ArgumentParser()
 parser.add_argument('-comps', action="store", dest="comps", default=None)
 args = parser.parse_args()
@@ -108,7 +108,6 @@ for region, tree_list in configs.items():
                 area["e"] = [0] * 201
             logs, loge = rnamotifs2.compute.es_apa(area["s"], area["e"], area["c"])
             image_filename = "%s_tree%s_area%s" % (region, index, a+1)
-            print fisher
             draw_sum = rnamotifs2.draw.area_apa("+".join(motif_list), logs[a], loge[a], os.path.join(comps_folder, "rnamap", image_filename), area=a, region=region, limy=max_es, fisher=fisher)
 
 regions = configs.keys()
@@ -142,9 +141,9 @@ for region in regions:
         for a in range(0, 1):
             f.write("<td align=center>")
             if web_folder==None:
-                image_filename = "%s_tree%s_area%s" % (region, index, a+1)
+                image_filename = "%s_tree%s_area%s.png?nocache=%s" % (region, index, a+1, nocache)
             else:
-                image_filename_temp = "%s_tree%s_area%s" % (region, index, a+1)
+                image_filename_temp = "%s_tree%s_area%s.png?nocache=%s" % (region, index, a+1, nocache)
                 image_filename = "%s/%s/rnamap/%s" % (web_folder, args.comps, image_filename_temp)
             if fisher!=None:
                 f.write("%s (<a href=%s target=_new>tree=%s</a>, h=%s)<br>" % ("+".join(motif_list), tree_file, index, h))

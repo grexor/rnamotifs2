@@ -8,8 +8,9 @@ import random
 import glob
 import time
 random.seed(42)
-
 import argparse
+
+nocache = random.randint(0, 1000000) # better would be a unique datetime number
 parser = argparse.ArgumentParser()
 parser.add_argument('-comps', action="store", dest="comps", default=None)
 args = parser.parse_args()
@@ -147,7 +148,7 @@ for region in regions:
             f.write("</td>")
         for a in range(0, 4):
             f.write("<td>")
-            image_filename = "%s_tree%s_area%s.png" % (region, index, a+1)
+            image_filename = "%s_tree%s_area%s.png?nocache=%s" % (region, index, a+1, nocache)
             f.write("<a href=%s class='highslide' onclick='return hs.expand(this)'><img src=%s width=250></a>" % (image_filename, image_filename))
             f.write("</td>")
         f.write("</tr>")

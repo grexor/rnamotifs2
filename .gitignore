@@ -1,2 +1,5 @@
 old*
 201506_splicing_tables_backup
+*.pyc
+comps
+comps.paper
