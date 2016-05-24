@@ -73,7 +73,7 @@ def next_cluster(comps, genome, region, cn, pth=0.5, sf="r"):
                 draw(comps, genome, region, cn, steps=step)
                 return # stop tree construction
 
-        num_worker_threads = 40
+        num_worker_threads = rnamotifs2.config.cores
         q = Queue()
         def worker():
             while True:

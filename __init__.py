@@ -62,7 +62,7 @@ def start_cluster(comps, genome, region, cn, pth, sf):
     print "%s.%s: saving sequences to pickle" % (comps, genome)
     rnamotifs2.sequence.save(comps, genome)
 
-    num_worker_threads = 40
+    num_worker_threads = rnamotifs2.config.cores
     q = Queue()
     def worker():
         while True:

@@ -5,8 +5,13 @@ import sys
 import os
 import shutil
 import glob
+import argparse
 
-comps = sys.argv[1]
+parser = argparse.ArgumentParser()
+parser.add_argument('-comps', action="store", dest="comps", default=None)
+args = parser.parse_args()
+
+comps = args.comps
 rnamotifs2.data.read_config(comps)
 rnamotifs2.data.read(comps)
 
