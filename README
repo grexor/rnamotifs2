@@ -1,6 +1,10 @@
 RNAmotifs v2.0
 
-**Dependencies**
+Example run on brain vs. heart data:
+
+rnamotifs2 -comps paper.bh
+
+Dependencies
 
 Highslide
   http://highslide.com/download-confirm.php?file=download%2Fhighslide-4.1.13.zip
