@@ -27,7 +27,8 @@ for region in ["r1s", "r1e", "r2s", "r2e", "r3s", "r3e"]:
         continue
     if rnamotifs2.data.dist.get("e", None)==None and region[-1]=="e":
         continue
-    rnamotifs2.start(comps, region, 0, 4)
+    # rnamotifs2.data.pth = 4 (default)
+    rnamotifs2.start(comps, region, 0, rnamotifs2.data.pth)
 
 if rnamotifs2.data.data_type=="apa":
     os.system("rnamotifs2.draw_apa -comps %s" % comps)

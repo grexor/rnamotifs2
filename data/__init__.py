@@ -36,9 +36,12 @@ def read_config(comps):
         continue
     f.close()
 
-    # by default, do not correct for FDR
+    # default values
     if getattr(m, "use_FDR", None)==None:
         setattr(m, "use_FDR", False)
+
+    if getattr(m, "pth", None)==None:
+        setattr(m, "pth", 4)
 
     if getattr(m, "base_motif_thr", None)==None:
         setattr(m, "base_motif_thr", 0.01)
