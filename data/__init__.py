@@ -49,6 +49,12 @@ def read_config(comps):
     if getattr(m, "cluster_stop_thr", None)==None:
         setattr(m, "cluster_stop_thr", 0.001)
 
+    if getattr(m, "perc_from", None)==None:
+        setattr(m, "perc_from", 3)
+
+    if getattr(m, "perc_to", None)==None:
+        setattr(m, "perc_to", 7)
+
 def read(comps):
     read_config(comps)
     if data_type=="apa":
@@ -62,7 +68,10 @@ def read_splice(comps):
     comps_filename = os.path.join(comps_folder, "%s.tab" % comps)
     temp = []
     f = open(comps_filename, "rt")
-    header = f.readline().replace("\r", "").replace("\n", "").split("\t")
+    r = f.readline()
+    while r.startswith("#"):
+        r = f.readline()
+    header = r.replace("\r", "").replace("\n", "").split("\t")
     r = f.readline()
     while r:
         r = r.replace("\r", "").replace("\n", "").split("\t")
@@ -82,7 +91,10 @@ def read_apa(comps):
     comps_filename = os.path.join(comps_folder, "%s.tab" % comps)
     temp = []
     f = open(comps_filename, "rt")
-    header = f.readline().replace("\r", "").replace("\n", "").split("\t")
+    r = f.readline()
+    while r.startswith("#"):
+        r = f.readline()
+    header = r.replace("\r", "").replace("\n", "").split("\t")
     r = f.readline()
     while r:
         r = r.replace("\r", "").replace("\n", "").split("\t")

@@ -79,7 +79,7 @@ a {
 }
 
 .my-tips {
-	border-radius: 5px; 
+	border-radius: 5px;
 	border: 0.5px solid #000;
 	background: #6c6c6c;
 	color: #fff;
@@ -113,10 +113,10 @@ for region, tree_list in configs.items():
             max_es = max(max_es, max(pybio.utils.smooth(logs[a])), max(pybio.utils.smooth(loge[a])))
             if comps==args.comps:
                 max_ref = max(max_ref, max(pybio.utils.smooth(logs[a])), max(pybio.utils.smooth(loge[a])))
-            
+
 print "max_es=%s" % max_es
 print "max_ref=%s" % max_ref
-            
+
 for region, tree_list in configs.items():
     for index, tree in enumerate(tree_list):
         fisher, h, motif_list, area, stats, comps, tindex = tree
@@ -135,9 +135,10 @@ for region in regions:
         fisher, h, motif_list, area, stats, comps, tindex = tree
         tree_file = "https://apa-db.org/rnamotifs2/%s/%s/%s" % (args.comps, region, "tree%s.tab" % tindex)
         logs, loge = rnamotifs2.compute.es(area["s"], area["e"], area["c"])
-        
+
         # only draw trees with value > 1/3 * max_es in at least one area
         if comps==args.comps: # only reference tissue
+            # draw = True # draw everything
             draw = False
             for a in range(0, 4):
                 if max(logs[a])>=max_ref/3 or max(loge[a])>=max_ref/3:
@@ -147,7 +148,7 @@ for region in regions:
 
         if (region, motif_list) in ignore_draw:
             continue
-                
+
         f.write("<tr>")
         f.write("<td align=right valign=center width=30px>%s<br><b>%s</b>" % ("_".join(motif_list), comps))
         if comps==args.comps:
@@ -178,7 +179,7 @@ for region in regions:
         f.write("</tr>")
 f.write("\n")
 f.write("</table>")
-    
+
 f.write("</body>")
 f.write("</html>\n")
 f.close()

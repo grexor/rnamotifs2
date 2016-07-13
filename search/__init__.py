@@ -30,18 +30,19 @@ def filter(v, thr):
     v[v>=thr] = 1 # then filter >=
     return v
 
-def choose_h(distances, pth, debug=False):
+def choose_h(distances, debug=False, perc_from=3, perc_to=7):
     if debug:
         for r in distances:
             print r
-    nd = [(dist, h) for (h, perc, dist) in distances if 3<=perc<=7] # perc between 3 and 7 %
-    nd = sorted(nd, key=operator.itemgetter(0, 1)) # search for closest to 4% pth
+    nd = [(dist, h) for (h, perc, dist) in distances if perc_from<=perc<=perc_to] # perc between 3 and 7 %
+    nd = sorted(nd, key=operator.itemgetter(0, 1)) # search for closest to pth
     if len(nd)>0:
         return nd[0][1]
     else:
         return None
 
 def v17(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={}, step=0, base_motif="TTTT", base_h=None):
+    rnamotifs2.data.read_config(comps)
     nums = Counter() # frequencies of s/e/c, key = r1.s, r1.e, ...
     area_size = 0
     vectors = {}
@@ -121,8 +122,9 @@ def v17(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={}, ste
                         exons_present += 1
             perc = exons_present/float(nums["t"]) * 100
             distances.append((h, perc, abs(perc-pth)))
-        choosen_h = choose_h(distances, pth, debug=False)
+        choosen_h = choose_h(distances, perc_from=rnamotifs2.data.perc_from, perc_to=rnamotifs2.data.perc_to, debug=False)
         if choosen_h==None: # don't consider motif if no 3%<=pth<=7%
+            print "no h found, ignoring motif %s" % motif
             return None
 
     if step>0:
@@ -180,6 +182,7 @@ def v17(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={}, ste
     return vectors_sum, rcounts, choosen_h, rfilter, nums, present
 
 def v17_new(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={}, step=0, base_motif="TTTT", base_h=None):
+    rnamotifs2.data.read_config(comps)
     nums = Counter() # frequencies of s/e/c, key = r1.s, r1.e, ...
     area_size = 0
     vectors = {}
@@ -252,7 +255,7 @@ def v17_new(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={},
                         exons_present += 1
             perc = exons_present/float(nums["t"]) * 100
             distances.append((h, perc, abs(perc-pth)))
-        choosen_h = choose_h(distances, pth, debug=False)
+        choosen_h = choose_h(distances, perc_from=rnamotifs2.data.perc_from, perc_to=rnamotifs2.data.perc_to, debug=False)
         if choosen_h==None: # skip motif if no 3%<=pth<=7%
             return None
 
@@ -312,6 +315,7 @@ def v17_new(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={},
     return vectors_sum, rcounts, choosen_h, rfilter, nums, present
 
 def v17_apa(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={}, step=0, base_motif="TTTT", base_h=None):
+    rnamotifs2.data.read_config(comps)
     nums = Counter() # frequencies of s/e/c, key = r1.s, r1.e, ...
     area_size = 0
     vectors = {}
@@ -370,7 +374,7 @@ def v17_apa(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={},
                         exons_present += 1
             perc = exons_present/float(nums["t"]) * 100
             distances.append((h, perc, abs(perc-pth)))
-        choosen_h = choose_h(distances, pth, debug=False)
+        choosen_h = choose_h(distances, perc_from=rnamotifs2.data.perc_from, perc_to=rnamotifs2.data.perc_to, debug=False)
         if choosen_h==None: # skip motif if no 3%<=pth<=7%
             return None
 
@@ -502,6 +506,7 @@ def areas(comps, motif="YCAY", hw=15, h=None):
     return vectors_sum, h, stats
 
 def areas_apa(comps, motif="YCAY", hw=15, h=None, pth=4):
+    rnamotifs2.data.read_config(comps)
     nums = Counter() # frequencies of s/e/c, key = r1.s, r1.e, ...
     area = 0
     vectors = {}
@@ -524,7 +529,7 @@ def areas_apa(comps, motif="YCAY", hw=15, h=None, pth=4):
                     exons_present += 1
             perc = exons_present/float(nums["e"]+nums["s"]) * 100
             distances.append((h, perc, abs(perc-pth)))
-        h = choose_h(distances, pth, debug=False)
+        h = choose_h(distances, perc_from=rnamotifs2.data.perc_from, perc_to=rnamotifs2.data.perc_to, debug=False)
 
     print "%s.%s: h=%s" % (comps, motif, h)
 
