@@ -20,18 +20,31 @@ rnamotifs2.data.read(args.comps)
 rnamotifs2.sequence.load(args.comps)
 
 num_s, num_e, num_c = rnamotifs2.data.dist["s"], rnamotifs2.data.dist["e"], rnamotifs2.data.dist["c"]
-print num_s, num_e, num_c
+print "RNA maps"
+print "silenced=%s, enhanced=%s, controls=%s" % (num_s, num_e, num_c)
 
 configs = {}
 for region in ["r1s", "r1e", "r2s", "r2e", "r3s", "r3e"]:
     trees = glob.glob(os.path.join(comps_folder, region, "tree*.tab"))
     trees.sort()
-    for index, tree_fname in enumerate(trees):
-        print region, tree_fname
-        fisher, h, motif_cluster = rnamotifs2.draw.read_tree(tree_fname)
-        areas, _, stats = rnamotifs2.search.areas(args.comps, motif=motif_cluster, hw=15, h=h)
-        print stats
-        configs.setdefault(region, []).append((fisher, h, motif_cluster, areas, stats))
+    if len(trees)==0: # RESULT from single results0.tab file
+        fname = os.path.join(comps_folder, region, "results0.tab")
+        if os.path.exists(fname):
+            f = open(fname, "rt")
+            header = f.readline()
+            r = f.readline()
+            motif_cluster, h, fisher = r.replace("\n", "").replace("\r", "").split("\t")[:3]
+            fisher = float(fisher)
+            h = int(h)
+            motif_cluster = [motif_cluster]
+            if fisher<0.05:
+                areas, _, stats = rnamotifs2.search.areas(args.comps, motif=motif_cluster, hw=15, h=h)
+                configs.setdefault(region, []).append((fisher, h, motif_cluster, areas, stats))
+    else: # RESULTS from tree
+        for index, tree_fname in enumerate(trees):
+            fisher, h, motif_cluster = rnamotifs2.draw.read_tree(tree_fname)
+            areas, _, stats = rnamotifs2.search.areas(args.comps, motif=motif_cluster, hw=15, h=h)
+            configs.setdefault(region, []).append((fisher, h, motif_cluster, areas, stats))
 
 if not os.path.exists(os.path.join(comps_folder, "rnamap")):
     os.makedirs(os.path.join(comps_folder, "rnamap"))

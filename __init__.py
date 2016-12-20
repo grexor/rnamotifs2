@@ -46,6 +46,10 @@ def start(comps, region, cn, pth):
     if not os.path.exists(os.path.join(pickle_folder)):
         os.makedirs(os.path.join(pickle_folder))
 
+    # make sequences
+    print "%s.%s: saving sequences to pickle" % (comps, rnamotifs2.data.genome)
+    rnamotifs2.sequence.save(comps, rnamotifs2.data.genome)
+
     start_cluster(comps, rnamotifs2.data.genome, region, cn, pth, sf)
 
 def start_cluster(comps, genome, region, cn, pth, sf):
@@ -58,11 +62,7 @@ def start_cluster(comps, genome, region, cn, pth, sf):
     rnamotifs2.data.read(comps)
     motifs = rnamotifs2.results.get_motifs(comps, region)
 
-    # make sequences
-    print "%s.%s: saving sequences to pickle" % (comps, genome)
-    rnamotifs2.sequence.save(comps, genome)
-
-    num_worker_threads = rnamotifs2.config.cores
+    num_worker_threads = rnamotifs2.data.cores
     q = Queue()
     def worker():
         while True:
@@ -184,7 +184,10 @@ def assemble_results(comps, genome, region, cn):
         except:
             base_motif_fisher = 1 # there are no results
     else:
-        base_motif_fisher, _, _ = test_results[data[0][0]] # get fisher value of top (base) motif
+        try:
+            base_motif_fisher, _, _ = test_results[data[0][0]] # get fisher value of top (base) motif
+        except:
+            base_motif_fisher = 1 # there are no results
     return base_motif_fisher
 
 def fdr(pvalues, correction_type = "Benjamini-Hochberg"):

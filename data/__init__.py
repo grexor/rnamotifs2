@@ -55,6 +55,9 @@ def read_config(comps):
     if getattr(m, "perc_to", None)==None:
         setattr(m, "perc_to", 7)
 
+    if getattr(m, "cores", None)==None:
+        setattr(m, "cores", 20)
+
 def read(comps):
     read_config(comps)
     if data_type=="apa":
