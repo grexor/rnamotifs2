@@ -2,7 +2,7 @@ import os
 import sys
 import rnamotifs2
 import operator
-import pickle
+import cPickle as pickle
 from Queue import Queue
 from threading import Thread
 import pybio
@@ -280,7 +280,7 @@ def draw(comps, genome, region, cn, steps=4):
     for k in rfilter.keys():
         if not k.startswith(cluster_region) and not k.startswith(control_region):
             del rfilter[k]
-    pickle.dump(rfilter, open(filename, "wb"))
+    pickle.dump(rfilter, open(filename, "wb"), protocol=2)
     """
 
 def redraw(comps, genome):

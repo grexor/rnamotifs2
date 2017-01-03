@@ -11,7 +11,7 @@ import pybio
 import math
 from fisher import pvalue
 import random
-import pickle
+import cPickle as pickle
 
 PAS_hexamers = [
     'AATAAA',
@@ -139,7 +139,7 @@ def save_splice(comps, genome, hw=15):
         assert(seq4_len==len(seq4))
 
         sequence[eid] = (seq1, seq2, seq3, seq4)
-    pickle.dump(sequence, open(pickle_filename, "wb"))
+    pickle.dump(sequence, open(pickle_filename, "wb"), protocol=2)
 
 def save_apa(comps, genome, hw=15):
     pickle_folder = os.path.join(rnamotifs2.path.comps_folder, comps, "pickle")
@@ -156,4 +156,4 @@ def save_apa(comps, genome, hw=15):
                 seq1 = seq1.replace(h, "NNNNNN")
                 break
         sequence[eid] = (seq1)
-    pickle.dump(sequence, open(pickle_filename, "wb"))
+    pickle.dump(sequence, open(pickle_filename, "wb"), protocol=2)

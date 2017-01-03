@@ -3,7 +3,7 @@ import os
 import sys
 import rnamotifs2
 import pybio
-import pickle
+import cPickle as pickle
 import copy
 from collections import Counter
 
@@ -61,4 +61,4 @@ if results!=None:
     area, rcounts, h, rfilter, nums, present = results
     test_result = rnamotifs2.compute.rtest(comps, genome, search_motif, rcounts, nums)
     pickle_filename = os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn, "_".join(motif), "_".join(sorted(cmotif))))
-    pickle.dump((area, test_result, h, rfilter, nums, rcounts, present), open(pickle_filename, "wb"))
+    pickle.dump((area, test_result, h, rfilter, nums, rcounts, present), open(pickle_filename, "wb"), protocol=2)
