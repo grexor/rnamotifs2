@@ -14,6 +14,7 @@ import random
 from collections import Counter
 import pickle
 import operator
+import scipy.signal
 
 cache = {}
 
@@ -64,8 +65,8 @@ def v17(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={}, ste
         (a1_exon, a1_intron, a1_start, a1_stop), (a2_exon, a2_intron, a2_start, a2_stop), (a3_exon, a3_intron, a3_start, a3_stop), (a4_exon, a4_intron, a4_start, a4_stop) = rnamotifs2.sequence.coords(strand, skip_start, in_start, in_stop, skip_stop)
         a2_len = (a2_stop-a2_start+1)
         a3_len = (a3_stop-a3_start+1)
-
         a1_core, a2_core, a3_core, a4_core = rnamotifs2.sequence.sequence[eid]
+
         a2_core = coverage(a2_core, a2_len, hw, motif)
         a3_core = coverage(a3_core, a3_len, hw, motif)
         assert(len(a2_core)==a2_len)
@@ -563,10 +564,25 @@ def areas_apa(comps, motif="YCAY", hw=15, h=None, pth=4):
         vectors_sum[event_class] = (v1s)
     return vectors_sum, h, stats
 
+# optimize this for speed
 def coverage(seq, seq_len, hw, motif, strict=False):
     if seq=="":
         return [0] * seq_len
     _, vector1 = pybio.sequence.search(seq, motif, strict=strict) # strict=True : require all motifs in list to be found
     vector2 = np.convolve(vector1, [1]*(hw*2+1), "same")
     vector = np.multiply(vector1, vector2)
-    return list(vector[hw:-hw])
+    result = list(vector[hw:-hw])
+    return result
+
+def coverage_fast(seq, seq_len, hw, motif, strict=False):
+    if seq=="":
+        return [0] * seq_len
+    _, vector1 = pybio.sequence.search(seq, motif, strict=strict) # strict=True : require all motifs in list to be found
+    window = hw*2+1
+    padding = [0] * (window/2)
+    vector2 = np.cumsum(np.concatenate(([0], vector1)))
+    vector2 = (vector2[window:] - vector2[:-window])
+    vector2 = padding + list(vector2) + padding
+    vector = np.multiply(vector1, vector2)
+    result = list(vector[hw:-hw])
+    return result

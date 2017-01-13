@@ -55,9 +55,10 @@ if cn>0:
     _, _, _, rfilter, _, _, _ = pickle.load(open(pickle_filename))
 else:
     rfilter = {}
-m = getattr(rnamotifs2.search, sf)
 
+m = getattr(rnamotifs2.search, sf)
 results = m(comps, genome, region=region, motif=search_motif, rfilter=rfilter, step=0, pth=pth)
+
 # only save motif results if we have a result :)
 if results!=None:
     area, rcounts, h, rfilter, nums, present = results
