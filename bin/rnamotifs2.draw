@@ -112,6 +112,12 @@ max_es = 0
 for region, tree_list in configs.items():
     for tree in tree_list:
         fisher, h, motif_list, area, stats = tree
+
+        # if we only have s / e features, take care of the others so the drawing is done
+        for t in ["s", "e", "c"]:
+            if area.get(t, None)==None:
+                area[t] = [[0]*251, [0]*251, [0]*251, [0]*251]
+
         logs, loge = rnamotifs2.compute.es(area["s"], area["e"], area["c"])
         for a in range(0, 4):
             max_es = max(max_es, max(pybio.utils.smooth(logs[a])), max(pybio.utils.smooth(loge[a])))
@@ -130,7 +136,7 @@ regions.sort()
 for region in regions:
     tree_list = configs[region]
     for index, tree in enumerate(tree_list):
-        tree_file = "https://apa-db.org/rnamotifs2/%s/%s/%s" % (args.comps, region, "tree%s.tab" % index)
+        tree_file = "https://expressrna.org/rnamotifs2/%s/%s/%s" % (args.comps, region, "tree%s.tab" % index)
         fisher, h, motif_list, area, stats = tree
         logs, loge = rnamotifs2.compute.es(area["s"], area["e"], area["c"])
 

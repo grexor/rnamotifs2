@@ -188,7 +188,7 @@ def area_apa(motif, s, e, filename, area=None, region=None, limy=None, fisher=No
         plt.gca().add_patch(p)
 
     if fisher!=None:
-        plt.title("%s, p-value = %.5f" % (motif, fisher), y=1.06)
+        plt.title("%s, p-value = %.2e" % (motif, fisher), y=1.06)
     else:
         plt.title("%s, p-value = cluster manually added" % (motif))
 
