@@ -148,7 +148,7 @@ for region in regions:
             if fisher!=None:
                 f.write("%s (<a href=%s target=_new>tree=%s</a>, h=%s)<br>" % ("+".join(motif_list), tree_file, index, h))
             else:
-                f.write("%s (added)<br>" % "+".join(motif_list))
+                f.write("%s (added), h=%s<br>" % ("+".join(motif_list), h))
             f.write("<a href=%s class='highslide' onclick='return hs.expand(this)'><img src=%s.png width=350></a>" % (image_filename, image_filename))
             f.write("</td>")
         f.write("</tr>")

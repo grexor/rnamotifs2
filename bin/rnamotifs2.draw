@@ -24,6 +24,7 @@ print "RNA maps"
 print "silenced=%s, enhanced=%s, controls=%s" % (num_s, num_e, num_c)
 
 configs = {}
+
 for region in ["r1s", "r1e", "r2s", "r2e", "r3s", "r3e"]:
     trees = glob.glob(os.path.join(comps_folder, region, "tree*.tab"))
     trees.sort()
@@ -45,6 +46,12 @@ for region in ["r1s", "r1e", "r2s", "r2e", "r3s", "r3e"]:
             fisher, h, motif_cluster = rnamotifs2.draw.read_tree(tree_fname)
             areas, _, stats = rnamotifs2.search.areas(args.comps, motif=motif_cluster, hw=15, h=h)
             configs.setdefault(region, []).append((fisher, h, motif_cluster, areas, stats))
+
+# examples of custom defined clusters that are drawn with other results
+#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["CTGT", "TTCC", "TGC", "CTTT"])
+#configs.setdefault("r4", []).append((None, h, ["CTGT", "TTCC", "TGC", "CTTT"], areas, stats))
+#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["ATT", "TGTT", "TGTG", "TCAT"])
+#configs.setdefault("r4", []).append((None, h, ["ATT", "TGTT", "TGTG", "TCAT"], areas, stats))
 
 if not os.path.exists(os.path.join(comps_folder, "rnamap")):
     os.makedirs(os.path.join(comps_folder, "rnamap"))
@@ -145,11 +152,14 @@ for region in regions:
         for a in range(0, 4):
             if max(logs[a])>max_es/3 or max(loge[a])>max_es/3:
                 draw = True
-        if not draw:
+        if not draw and region!="r4":
             continue
 
         f.write("<tr>")
-        f.write("<td align=right valign=center width=30px>%s<br><a href=%s target=_new>tree=%s</a><br>h=%s</td>" % ("+".join(motif_list), tree_file, index, h))
+        if region!="r4":
+            f.write("<td align=right valign=center width=30px>%s<br><a href=%s target=_new>tree=%s</a><br>h=%s</td>" % ("+".join(motif_list), tree_file, index, h))
+        else:
+            f.write("<td align=right valign=center width=30px>%s<br>added<br>h=%s</td>" % ("+".join(motif_list), h))
         for r in ["r1", "r2", "r3"]:
             if region[:-1]==r:
                 if region[-1]=="e":
@@ -165,11 +175,18 @@ for region in regions:
             f.write("<circle id='%s' %s cx=9 cy=9 r=7 stroke=#ffffff stroke-width=1 fill='%s'/>" % (cid, title, color))
             f.write("</svg>")
             f.write("</td>")
-        for a in range(0, 4):
-            f.write("<td>")
-            image_filename = "%s_tree%s_area%s.png?nocache=%s" % (region, index, a+1, nocache)
-            f.write("<a href=%s class='highslide' onclick='return hs.expand(this)'><img src=%s width=250></a>" % (image_filename, image_filename))
-            f.write("</td>")
+        if region[:-1] in ["r1", "r2", "r3"]:
+            for a in range(0, 4):
+                f.write("<td>")
+                image_filename = "%s_tree%s_area%s.png?nocache=%s" % (region, index, a+1, nocache)
+                f.write("<a href=%s class='highslide' onclick='return hs.expand(this)'><img src=%s width=250></a>" % (image_filename, image_filename))
+                f.write("</td>")
+        if region in ["r4"]:
+            for a in range(0, 4):
+                f.write("<td>")
+                image_filename = "%s_tree%s_area%s.png?nocache=%s" % (region, index, a+1, nocache)
+                f.write("<a href=%s class='highslide' onclick='return hs.expand(this)'><img src=%s width=250></a>" % (image_filename, image_filename))
+                f.write("</td>")
         f.write("</tr>")
 f.write("\n")
 f.write("</table>")

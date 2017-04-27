@@ -437,12 +437,13 @@ def v17_apa(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={},
 
     return vectors_sum, rcounts, choosen_h, rfilter, nums, present
 
-def areas(comps, motif="YCAY", hw=15, h=None):
+def areas(comps, motif="YCAY", hw=15, h=None, pth=4):
     nums = Counter() # frequencies of s/e/c, key = r1.s, r1.e, ...
     area = 0
     vectors = {}
     seqs = {}
     for (eid, chr, strand, skip_start, in_start, in_stop, skip_stop, event_class) in rnamotifs2.data.data:
+        nums[event_class] += 1
         (r1_exon, r1_intron, r1_start, r1_stop), (r2_exon, r2_intron, r2_start, r2_stop), (r3_exon, r3_intron, r3_start, r3_stop), (r4_exon, r4_intron, r4_start, r4_stop) = rnamotifs2.sequence.coords(strand, skip_start, in_start, in_stop, skip_stop)
         r1_len = (r1_stop-r1_start+1)
         r2_len = (r2_stop-r2_start+1)
@@ -467,6 +468,21 @@ def areas(comps, motif="YCAY", hw=15, h=None):
         assert(len(r3_core)==251)
         assert(len(r4_core)==251)
         vectors[(eid, event_class)] = (r1_core, r2_core, r3_core, r4_core)
+
+    # if no h specified (motif cluster manually added for drawing), find best h
+    if h==None:
+        print "%s.%s: looking for h closest to threshold" % (comps, motif)
+        distances = []
+        for h in range(4, 32):
+            exons_present = 0
+            for (eid, event_class), (r1, r2, r3, r4) in vectors.items():
+                if event_class=="c":
+                    continue
+                if max(r1)>=h or max(r2)>=h or max(r3)>=h or max(r4)>=h:
+                    exons_present += 1
+            perc = exons_present/float(nums["e"]+nums["s"]) * 100
+            distances.append((h, perc, abs(perc-pth)))
+        h = choose_h(distances, perc_from=rnamotifs2.data.perc_from, perc_to=rnamotifs2.data.perc_to, debug=False)
 
     print "%s.%s: h=%s" % (comps, motif, h)
 
