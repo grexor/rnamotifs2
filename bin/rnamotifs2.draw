@@ -5,12 +5,15 @@ import rnamotifs2
 import pybio
 import pickle
 import random
+random.seed(42)
 import glob
 import time
-random.seed(42)
 import argparse
 
-nocache = random.randint(0, 1000000) # better would be a unique datetime number
+import datetime, time
+dt = datetime.datetime.today()
+nocache = time.mktime(dt.timetuple()) # datetime in seconds
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-comps', action="store", dest="comps", default=None)
 args = parser.parse_args()
@@ -48,10 +51,42 @@ for region in ["r1s", "r1e", "r2s", "r2e", "r3s", "r3e"]:
             configs.setdefault(region, []).append((fisher, h, motif_cluster, areas, stats))
 
 # examples of custom defined clusters that are drawn with other results
-#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["CTGT", "TTCC", "TGC", "CTTT"])
-#configs.setdefault("r4", []).append((None, h, ["CTGT", "TTCC", "TGC", "CTTT"], areas, stats))
-#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["ATT", "TGTT", "TGTG", "TCAT"])
-#configs.setdefault("r4", []).append((None, h, ["ATT", "TGTT", "TGTG", "TCAT"], areas, stats))
+
+#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["YTCY", "YCTY"], h=5)
+#configs.setdefault("r4", []).append((None, h, ["YTCY", "YCTY"], areas, stats))
+
+#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["YTCY", "YCTY"], h=10)
+#configs.setdefault("r4", []).append((None, h, ["YTCY", "YCTY"], areas, stats))
+
+#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["YTCY", "YCTY"], h=15)
+#configs.setdefault("r4", []).append((None, h, ["YTCY", "YCTY"], areas, stats))
+
+#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["YTCY", "YCTY"], h=20)
+#configs.setdefault("r4", []).append((None, h, ["YTCY", "YCTY"], areas, stats))
+
+#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["YCAY"], h=5)
+#configs.setdefault("r4", []).append((None, h, ["YCAY"], areas, stats))
+
+#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["YCAY"], h=10)
+#configs.setdefault("r4", []).append((None, h, ["YCAY"], areas, stats))
+
+#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["YCAY"], h=15)
+#configs.setdefault("r4", []).append((None, h, ["YCAY"], areas, stats))
+
+#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["YCAY"], h=20)
+#configs.setdefault("r4", []).append((None, h, ["YCAY"], areas, stats))
+
+#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["TTTA", "TTAT"], h=5)
+#configs.setdefault("r4", []).append((None, h, ["TTTA", "TTAT"], areas, stats))
+
+#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["TTTA", "TTAT"], h=10)
+#configs.setdefault("r4", []).append((None, h, ["TTTA", "TTAT"], areas, stats))
+
+#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["TTTA", "TTAT"], h=15)
+#configs.setdefault("r4", []).append((None, h, ["TTTA", "TTAT"], areas, stats))
+
+#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["TTTA", "TTAT"], h=20)
+#configs.setdefault("r4", []).append((None, h, ["TTTA", "TTAT"], areas, stats))
 
 if not os.path.exists(os.path.join(comps_folder, "rnamap")):
     os.makedirs(os.path.join(comps_folder, "rnamap"))
@@ -122,7 +157,7 @@ for region, tree_list in configs.items():
 
         # if we only have s / e features, take care of the others so the drawing is done
         for t in ["s", "e", "c"]:
-            if area.get(t, None)==None:
+            if t not in area:
                 area[t] = [[0]*251, [0]*251, [0]*251, [0]*251]
 
         logs, loge = rnamotifs2.compute.es(area["s"], area["e"], area["c"])

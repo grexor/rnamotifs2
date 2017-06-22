@@ -11,7 +11,11 @@ import argparse
 
 web_folder = None
 web_folder = "/rnamotifs2"
-nocache = random.randint(0, 1000000)
+
+import datetime, time
+dt = datetime.datetime.today()
+nocache = time.mktime(dt.timetuple()) # datetime in seconds
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-comps', action="store", dest="comps", default=None)
 args = parser.parse_args()
@@ -33,6 +37,7 @@ for region in ["r1s", "r1e", "r2s", "r2e", "r3s", "r3e"]:
         areas, h, stats = rnamotifs2.search.areas_apa(args.comps, motif=motif_cluster, h=h)
         configs.setdefault(region, []).append((fisher, h, motif_cluster, areas))
 
+# examples of custom defined clusters that are drawn with other results
 areas, h, stats = rnamotifs2.search.areas_apa(args.comps, motif=["TGT", "GTG"])
 configs.setdefault("r4", []).append((None, h, ["TGT", "GTG"], areas))
 
@@ -91,9 +96,9 @@ for region, tree_list in configs.items():
     for tree in tree_list:
         fisher, h, motif_list, area = tree
         for a in range(0, 1):
-            if area.get("s", None)==None:
+            if "s" not in area:
                 area["s"] = [0] * 201
-            if area.get("e", None)==None:
+            if "e" not in area:
                 area["e"] = [0] * 201
             logs, loge = rnamotifs2.compute.es_apa(area["s"], area["e"], area["c"])
             max_es = max(max_es, max(pybio.utils.smooth(logs[a])), max(pybio.utils.smooth(loge[a])))
@@ -102,9 +107,9 @@ for region, tree_list in configs.items():
     for index, tree in enumerate(tree_list):
         fisher, h, motif_list, area = tree
         for a in range(0, 1):
-            if area.get("s", None)==None:
+            if "s" not in area:
                 area["s"] = [0] * 201
-            if area.get("e", None)==None:
+            if "e" not in area:
                 area["e"] = [0] * 201
             logs, loge = rnamotifs2.compute.es_apa(area["s"], area["e"], area["c"])
             image_filename = "%s_tree%s_area%s" % (region, index, a+1)
