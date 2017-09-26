@@ -10,7 +10,7 @@ First, we search all the features for all possible short motifs (tri, tetra, pen
 
 However, since several proteins can regulate pre-mRNA processing by binding simultaneously around regulated features, the features with the strongest identified motif signal are removed. This is then compensated by searching the remaining feature space with the already identified motif (or cluster) paired with all other possible short-motifs (e.g. 256 tetramers). The search is reiterated until we reach a cluster of max. 4 motifs.
 
-Finally, we compute and enrichment score (ES) on the superimposed sequences of our features (exons, polyA sites) and draw a motif regulatory RNA-map.
+Finally, we compute an enrichment score (ES) on the super-imposed sequences of all the features (exons, polyA sites) and draw a motif regulatory RNA-map.
 
 ## Authors
 
