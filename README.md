@@ -1,6 +1,6 @@
 # RNAmotifs2: cluster motif analysis
 
-RNAmotifs2 is a Python software for identifying clusters of motifs underlying regulatory principles of alternative splicing and alternative polyadenylation. RNAmotifs2 can be used as a standalone software (requires [pybio](https://github.com/grexor/apa)), however it is also integrated with [apa](https://github.com/grexor/apa) and [expressRNA](http://expressRNA.org).
+RNAmotifs2 is a Python software for identifying clusters of motifs underlying regulatory principles of alternative splicing and alternative polyadenylation. RNAmotifs2 can be used as a standalone software (requires [pybio](https://github.com/grexor/pybio)), however it is also integrated with [apa](https://github.com/grexor/apa) and [expressRNA](http://expressRNA.org).
 
 ## Short description
 
