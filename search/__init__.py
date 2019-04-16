@@ -572,8 +572,7 @@ def areas_apa(comps, motif="YCAY", hw=15, h=None, pth=4):
         stats["r3%s" % event_class] += temp
 
     print "%s.%s: sum and count" % (comps, motif)
-    # sum vectors
-    vectors_sum = {}
+    vectors_sum = {} # sum vectors
     for index, ((eid, event_class), (v1)) in enumerate(vectors.items()):
         (v1s) = vectors_sum.get(event_class, ([0]*201))
         v1s = np.add(v1, v1s)
@@ -586,19 +585,6 @@ def coverage(seq, seq_len, hw, motif, strict=False):
         return [0] * seq_len
     _, vector1 = pybio.sequence.search(seq, motif, strict=strict) # strict=True : require all motifs in list to be found
     vector2 = np.convolve(vector1, [1]*(hw*2+1), "same")
-    vector = np.multiply(vector1, vector2)
-    result = list(vector[hw:-hw])
-    return result
-
-def coverage_fast(seq, seq_len, hw, motif, strict=False):
-    if seq=="":
-        return [0] * seq_len
-    _, vector1 = pybio.sequence.search(seq, motif, strict=strict) # strict=True : require all motifs in list to be found
-    window = hw*2+1
-    padding = [0] * (window/2)
-    vector2 = np.cumsum(np.concatenate(([0], vector1)))
-    vector2 = (vector2[window:] - vector2[:-window])
-    vector2 = padding + list(vector2) + padding
     vector = np.multiply(vector1, vector2)
     result = list(vector[hw:-hw])
     return result
