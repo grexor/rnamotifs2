@@ -14,9 +14,9 @@ Finally, we compute an enrichment score (ES) on the super-imposed sequences of a
 
 ## Authors
 
-[RNAmotifs2](https://github.com/grexor/rnamotifs2) is developed and supported by [Gregor Rot](https://grexor.github.io) in collaboration with several research laboratories worldwide.
+[RNAmotifs2](https://github.com/grexor/rnamotifs2) is maintained by [Gregor Rot](https://grexor.github.io) in collaboration with several research laboratories worldwide.
 
-The development started in 2010 when Matteo Cereda wrote and published the first version of [RNAmotifs](https://genomebiology.biomedcentral.com/articles/10.1186/gb-2014-15-1-r20). In 2014, Gregor Rot refactored the RNAmotifs code to Python and further developed the code with the cluster analysis, also integrating the software with [expressRNA](http://expressRNA.org). This updated version is now called RNAmotifs2.
+The development started in 2010 when Matteo Cereda wrote and published the first version of [RNAmotifs](https://genomebiology.biomedcentral.com/articles/10.1186/gb-2014-15-1-r20). In 2014, Gregor Rot refactored the RNAmotifs code to Python and make another branch of the software adding cluster analysis and integrating the software with [expressRNA](http://expressRNA.org). This cluster branch of the software is now called RNAmotifs2.
 
 ## Citing RNAmotifs2
 
