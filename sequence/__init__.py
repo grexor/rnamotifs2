@@ -99,10 +99,10 @@ def save_splice(comps, genome, hw=15):
         exon_len = in_stop - in_start + 1
         downintron_len = skip_stop - in_stop + 1
         (r1_exon, r1_intron, r1_start, r1_stop), (r2_exon, r2_intron, r2_start, r2_stop), (r3_exon, r3_intron, r3_start, r3_stop), (r4_exon, r4_intron, r4_start, r4_stop) = coords(strand, skip_start, in_start, in_stop, skip_stop)
-        seq1 = pybio.genomes.seq_direct(genome, chr.replace("chr", ""), strand, r1_start-hw, r1_stop+hw)
-        seq2 = pybio.genomes.seq_direct(genome, chr.replace("chr", ""), strand, r2_start-hw, r2_stop+hw)
-        seq3 = pybio.genomes.seq_direct(genome, chr.replace("chr", ""), strand, r3_start-hw, r3_stop+hw)
-        seq4 = pybio.genomes.seq_direct(genome, chr.replace("chr", ""), strand, r4_start-hw, r4_stop+hw)
+        seq1 = rnamotifs2.genomes.seq_direct(genome, chr.replace("chr", ""), strand, r1_start-hw, r1_stop+hw)
+        seq2 = rnamotifs2.genomes.seq_direct(genome, chr.replace("chr", ""), strand, r2_start-hw, r2_stop+hw)
+        seq3 = rnamotifs2.genomes.seq_direct(genome, chr.replace("chr", ""), strand, r3_start-hw, r3_stop+hw)
+        seq4 = rnamotifs2.genomes.seq_direct(genome, chr.replace("chr", ""), strand, r4_start-hw, r4_stop+hw)
 
         seq1_len = len(seq1)
         seq2_len = len(seq2)
@@ -149,7 +149,7 @@ def save_apa(comps, genome, hw=15):
     pickle_filename = os.path.join(pickle_folder, "sequence.pickle")
     sequence = {}
     for (eid, chr, strand, pos, event_class) in rnamotifs2.data.data:
-        seq1 = pybio.genomes.seq_direct(genome, chr.replace("chr", ""), strand, pos-rnamotifs2.data.flanking-hw, pos+rnamotifs2.data.flanking+hw)
+        seq1 = rnamotifs2.genomes.seq_direct(genome, chr.replace("chr", ""), strand, pos-rnamotifs2.data.flanking-hw, pos+rnamotifs2.data.flanking+hw)
         # mask poly-A signal
         for h in PAS_hexamers:
             if seq1.find(h)!=-1:

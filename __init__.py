@@ -5,6 +5,7 @@ RNAmotifs2
 import rnamotifs2
 import os
 import pybio
+from . import genomes
 from . import data
 from . import search
 from . import compute
@@ -26,7 +27,7 @@ random.seed(42)
 path.init()
 
 def get_motifs():
-    return pybio.genomes.make_motifs_nr(4)+pybio.genomes.make_motifs_nr(3)
+    return rnamotifs2.genomes.make_motifs_nr(4)+rnamotifs2.genomes.make_motifs_nr(3)
 
 def start(comps, region, cn, pth):
     rnamotifs2.data.read_config(comps)
