@@ -85,6 +85,32 @@ turned on (`perms=200`, `use_FDR=True`) — run it with
 `./run_example.sh paper.bh.strict` and compare its `results0.tab` `fisher` /
 `p_emp` columns to `paper.bh`'s.
 
+### Greedy search: `beam_width` and `comps/paper.bh.strict.beam`
+
+FDR and permutations fix the reported *p-value*; they don't touch a separate
+problem in the cluster-growth *search itself*. It's a greedy algorithm: at
+each step it commits to the single best-scoring motif, removes its support,
+and only ever builds on top of that one choice. A motif that scores worse
+individually can still combine into a much stronger cluster than the "best"
+individual motif ever reaches — pure greedy search never looks, because it
+locked onto the top-ranked motif at step 0 and never backtracks.
+
+`beam_width=<k>` (default 1 = plain greedy, `cluster.next_cluster`) grows `k`
+independent chains in parallel, one per each of the top-`k` base motifs
+(`cluster.next_cluster_beam`), and keeps whichever chain ends up with the
+best final score — every beam's result is written to `beams<n>.tab` for
+inspection. This diversifies the highest-leverage decision (choosing among
+~320 candidates at step 0); it does not re-rank chains against each other at
+every later step too (full recursive beam search), which would cost
+`beam_width` times more at every step instead of just the first.
+
+On `comps/paper.bh.strict.beam` (`beam_width=5` on top of `paper.bh.strict`'s
+`perms=200`/`use_FDR=True`), region r1s's rank-2 starting motif (`TTCA`,
+individually weaker than the greedy #1 pick `TCAT`) won: its final cluster
+(`TGT`+`ATT`+`TTCA`) reached fisher `5.4e-10`, about five orders of magnitude
+better than the plain-greedy `TCAT` chain's `3.0e-05` — exactly the failure
+mode beam search exists to catch.
+
 ## Authors
 
 [RNAmotifs2](https://github.com/grexor/rnamotifs2) is maintained by [Gregor Rot](https://grexor.github.io) in collaboration with several research laboratories worldwide.

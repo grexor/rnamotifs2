@@ -3,11 +3,15 @@ import sys
 import rnamotifs2
 import operator
 import pickle
+import shutil
 import pybio
 
 max_steps = 4
 
-def start_motifs(comps, region, cn):
+def start_motifs(comps, region, cn, rank=0):
+    """rank=0 is the single best base motif (what plain greedy search uses);
+    beam search calls this with rank=1,2,... to also grow chains starting
+    from the 2nd-best, 3rd-best, ... base motif."""
     region_folder = os.path.join(rnamotifs2.path.comps_folder, comps, region)
     motifs = []
     filename = os.path.join(region_folder, "results%s.tab" % cn)
@@ -26,14 +30,14 @@ def start_motifs(comps, region, cn):
         r = f.readline()
     f.close()
     motifs = sorted(motifs, key=operator.itemgetter(2))
-    cmotif, h, fisher, ig, raw_ig, p_emp = motifs[0]
+    cmotif, h, fisher, ig, raw_ig, p_emp = motifs[rank]
     motifs = [[x] for x in rnamotifs2.results.get_motifs(comps, region) if x!=cmotif]
     return motifs, cmotif.split("_"), fisher, ig, raw_ig, p_emp, h
 
-def next_motifs(comps, region, cn, step):
+def next_motifs(comps, region, cn, step, tag=""):
     region_folder = os.path.join(rnamotifs2.path.comps_folder, comps, region)
     motifs = []
-    filename = os.path.join(region_folder, "c%s.temp%s.tab" % (cn, step-1))
+    filename = os.path.join(region_folder, "%sc%s.temp%s.tab" % (tag, cn, step-1))
     f = open(filename, "rt")
     header = f.readline().replace("\r", "").replace("\n", "").split("\t")
     r = f.readline()
@@ -55,7 +59,13 @@ def next_motifs(comps, region, cn, step):
     motifs = [x[0] for x in motifs]
     return motifs, cmotif, fisher, ig, raw_ig, p_emp, h
 
-def next_cluster(comps, genome, region, cn, pth=0.5, sf="r"):
+def next_cluster(comps, genome, region, cn, pth=0.5, sf="r", rank=0, tag=""):
+    """Greedy growth of a single cluster chain, starting from the `rank`-th
+    best base motif in results{cn}.tab (rank=0, the default, is what a plain
+    run always used). `tag`, a filename prefix, keeps a beam-search caller's
+    parallel chains (see next_cluster_beam) from overwriting each other's
+    c{cn}.temp{step}.tab / tree{cn}.tab; motif-set-keyed pickles are shared
+    across chains/beams as before."""
     comps_folder = os.path.join(rnamotifs2.path.comps_folder, comps)
     region_folder = os.path.join(comps_folder, region)
     pickle_folder = os.path.join(region_folder, "pickle")
@@ -66,11 +76,11 @@ def next_cluster(comps, genome, region, cn, pth=0.5, sf="r"):
 
     for step in range(0, max_steps):
         if step==0:
-            motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.start_motifs(comps, region, cn)
+            motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.start_motifs(comps, region, cn, rank=rank)
         else:
-            motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.next_motifs(comps, region, cn, step)
+            motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.next_motifs(comps, region, cn, step, tag=tag)
             if fisher>rnamotifs2.data.cluster_stop_thr:
-                draw(comps, genome, region, cn, steps=step)
+                draw(comps, genome, region, cn, steps=step, rank=rank, tag=tag)
                 return # stop tree construction
 
         tasks = []
@@ -85,19 +95,75 @@ def next_cluster(comps, genome, region, cn, pth=0.5, sf="r"):
                 tasks.append(("motif", comps, genome, region, "_".join(cluster), pth, 0, sf))
         rnamotifs2.pool.run(tasks, rnamotifs2.data.cores)
 
-        assemble(comps, genome, region, cn, step)
+        assemble(comps, genome, region, cn, step, rank=rank, tag=tag)
 
-    draw(comps, genome, region, cn, steps=max_steps)
+    draw(comps, genome, region, cn, steps=max_steps, rank=rank, tag=tag)
 
-def assemble(comps, genome, region, cn, step):
+def next_cluster_beam(comps, genome, region, cn, pth=0.5, sf="r", beam_width=5):
+    """Beam search over the starting (base) motif: instead of only ever
+    growing a chain from the single best base motif (next_cluster's rank=0),
+    independently grow one chain per each of the top `beam_width` base
+    motifs in results{cn}.tab, using the exact same greedy step-by-step
+    growth for each. The chain with the best final fisher is promoted to the
+    canonical tree{cn}.tab (so everything downstream - get_motifs(), the
+    next tree's rfilter carryover, bin/rnamotifs2.draw - is unaffected); every
+    beam's result is also written to beams{cn}.tab for inspection.
+
+    This diversifies the highest-leverage decision (choosing among ~320
+    candidates at step 0) without the cost of re-ranking all chains against
+    each other at every subsequent step (full recursive beam search) - a
+    weaker individual base motif that turns out to combine better than the
+    single best one is no longer invisible, but a promising *combination*
+    that only becomes visible a few steps into some other chain still is.
+    """
+    region_folder = os.path.join(rnamotifs2.path.comps_folder, comps, region)
+    results_file = os.path.join(region_folder, "results%s.tab" % cn)
+    with open(results_file, "rt") as f:
+        f.readline()
+        rows = [l.replace("\r", "").replace("\n", "").split("\t") for l in f if l.strip()]
+
+    width = min(beam_width, len(rows))
+    print("%s.%s.%s: beam search, width=%d" % (comps, genome, region, width))
+
+    beams = []
+    for rank in range(width):
+        if float(rows[rank][2]) > rnamotifs2.data.base_motif_thr:
+            break  # results{cn}.tab is sorted by fisher; later ranks are only worse
+        tag = "beam%d." % rank
+        next_cluster(comps, genome, region, cn, pth=pth, sf=sf, rank=rank, tag=tag)
+        tree_file = os.path.join(region_folder, "%stree%s.tab" % (tag, cn))
+        with open(tree_file, "rt") as f:
+            header = f.readline().replace("\r", "").replace("\n", "").split("\t")
+            last = None
+            for line in f:
+                if line.strip():
+                    last = dict(zip(header, line.replace("\r", "").replace("\n", "").split("\t")))
+        beams.append((rank, tag, float(last["fisher"]), last))
+
+    if not beams:
+        return
+
+    beams.sort(key=lambda x: x[2])  # best (lowest) fisher first
+    winner_rank, winner_tag, winner_fisher, _ = beams[0]
+    shutil.copyfile(os.path.join(region_folder, "%stree%s.tab" % (winner_tag, cn)),
+                    os.path.join(region_folder, "tree%s.tab" % cn))
+
+    with open(os.path.join(region_folder, "beams%s.tab" % cn), "wt") as f:
+        f.write("rank\tfisher\tmotif\tcmotif\twinner\n")
+        for rank, tag, fisher, last in beams:
+            f.write("%d\t%s\t%s\t%s\t%s\n" % (rank, fisher, last["motif"], last["cmotif"], rank == winner_rank))
+    print("%s.%s.%s: beam search winner = rank %d (fisher=%s) of %d beams" %
+          (comps, genome, region, winner_rank, winner_fisher, len(beams)))
+
+def assemble(comps, genome, region, cn, step, rank=0, tag=""):
     comps_folder = os.path.join(rnamotifs2.path.comps_folder, comps)
     region_folder = os.path.join(comps_folder, region)
     pickle_folder = os.path.join(region_folder, "pickle")
 
     if step==0:
-        motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.start_motifs(comps, region, cn)
+        motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.start_motifs(comps, region, cn, rank=rank)
     else:
-        motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.next_motifs(comps, region, cn, step)
+        motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.next_motifs(comps, region, cn, step, tag=tag)
 
     area = {}
     h = {}
@@ -133,7 +199,8 @@ def assemble(comps, genome, region, cn, step):
         data.append(row)
 
     data = sorted(data, key=operator.itemgetter(3))
-    f = open(os.path.join(region_folder, "c%s.temp%s.tab" % (cn, step)), "wt")
+    out_filename = os.path.join(region_folder, "%sc%s.temp%s.tab" % (tag, cn, step))
+    f = open(out_filename, "wt")
     header = ["motif", "cmotif", "h", "fisher", "ig", "raw_ig", "p_emp"]
     f.write("\t".join(header)+"\n")
     for row in data:
@@ -143,9 +210,9 @@ def assemble(comps, genome, region, cn, step):
     # correct for fdr?
     rnamotifs2.data.read_config(comps)
     if rnamotifs2.data.use_FDR:
-        pybio.utils.FDR_tab(os.path.join(region_folder, "c%s.temp%s.tab" % (cn, step)), "fisher")
+        pybio.utils.FDR_tab(out_filename, "fisher")
 
-def draw(comps, genome, region, cn, steps=4):
+def draw(comps, genome, region, cn, steps=4, rank=0, tag=""):
     cluster_region = "t"
     control_region = "c"
 
@@ -156,9 +223,9 @@ def draw(comps, genome, region, cn, steps=4):
     # read data
     rnamotifs2.data.read(comps)
     rnamotifs2.sequence.load(comps)
-    motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.start_motifs(comps, region, cn)
+    motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.start_motifs(comps, region, cn, rank=rank)
 
-    fout = open(os.path.join(region_folder, "tree%s.tab" % cn), "wt")
+    fout = open(os.path.join(region_folder, "%stree%s.tab" % (tag, cn)), "wt")
     header = ["step", "fisher", "ig", "raw_ig", "h"]
     num_region = rnamotifs2.data.dist[region[-1]] # dist contains only keys: s, e, c
     num_control = rnamotifs2.data.dist[control_region]
@@ -178,10 +245,10 @@ def draw(comps, genome, region, cn, steps=4):
     follow = True
     for step in range(0, steps):
         if step==0:
-            motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.start_motifs(comps, region, cn)
+            motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.start_motifs(comps, region, cn, rank=rank)
             motif, cmotif = cmotif, []
         else:
-            motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.next_motifs(comps, region, cn, step)
+            motifs, cmotif, fisher, ig, raw_ig, p_emp, h = rnamotifs2.cluster.next_motifs(comps, region, cn, step, tag=tag)
             motif, cmotif = [cmotif[0]], cmotif[1:]
             cluster = motif+cmotif
 

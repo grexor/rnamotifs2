@@ -79,7 +79,11 @@ def start_cluster(comps, genome, region, cn, pth, sf):
     return base_motif_fisher
 
 def continue_cluster(comps, genome, region, cn, pth, sf):
-    rnamotifs2.cluster.next_cluster(comps, genome, region, cn, pth=pth, sf=sf)
+    if getattr(rnamotifs2.data, "beam_width", 1) > 1:
+        rnamotifs2.cluster.next_cluster_beam(comps, genome, region, cn, pth=pth, sf=sf,
+                                             beam_width=rnamotifs2.data.beam_width)
+    else:
+        rnamotifs2.cluster.next_cluster(comps, genome, region, cn, pth=pth, sf=sf)
     # try to start new cluster, if base_motif will have fisher < thr, it will stop processing
     start_cluster(comps, genome, region, cn+1, pth, sf)
 
