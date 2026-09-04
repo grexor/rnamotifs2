@@ -12,12 +12,15 @@ def highlight_region(mpatches, ax, x0, width, edgecolor):
     The rectangle is sized to the axes' actual y-limits (rather than a fixed
     height) so its top and bottom edges land inside the visible plot area —
     a fixed height taller than the data range clips the top border out of
-    view entirely.
+    view entirely. Because the top/bottom edges then sit exactly on the axes'
+    clip boundary, the border patch has clipping disabled — otherwise only
+    the inner half of its stroke survives there, making those two edges look
+    thinner than the (strictly interior) left/right edges.
     """
     y0, y1 = ax.get_ylim()
     ax.add_patch(mpatches.Rectangle([x0, y0], width, y1 - y0, color="#FFFF00", alpha=0.1, zorder=2))
     ax.add_patch(mpatches.Rectangle([x0, y0], width, y1 - y0, facecolor='none',
-                                    edgecolor=edgecolor, linewidth=4, zorder=3))
+                                    edgecolor=edgecolor, linewidth=4, zorder=3, clip_on=False))
 
 def read_tree(filename):
     motif = []
