@@ -5,12 +5,19 @@ import math
 import numpy as np
 import pybio
 
-def highlight_region(mpatches, ax, x0, width, edgecolor, height=200):
+def highlight_region(mpatches, ax, x0, width, edgecolor):
     """Yellow fill for the analyzed window, with a colored border showing
-    which event class (blue=silenced, red=enhanced) it was detected in."""
-    ax.add_patch(mpatches.Rectangle([x0, 0], width, height, color="#FFFF00", alpha=0.1))
-    ax.add_patch(mpatches.Rectangle([x0, 0], width, height, facecolor='none',
-                                    edgecolor=edgecolor, linewidth=2.5))
+    which event class (blue=silenced, red=enhanced) it was detected in.
+
+    The rectangle is sized to the axes' actual y-limits (rather than a fixed
+    height) so its top and bottom edges land inside the visible plot area —
+    a fixed height taller than the data range clips the top border out of
+    view entirely.
+    """
+    y0, y1 = ax.get_ylim()
+    ax.add_patch(mpatches.Rectangle([x0, y0], width, y1 - y0, color="#FFFF00", alpha=0.1, zorder=2))
+    ax.add_patch(mpatches.Rectangle([x0, y0], width, y1 - y0, facecolor='none',
+                                    edgecolor=edgecolor, linewidth=3, zorder=3))
 
 def read_tree(filename):
     motif = []
