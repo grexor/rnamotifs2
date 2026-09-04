@@ -111,6 +111,44 @@ individually weaker than the greedy #1 pick `TCAT`) won: its final cluster
 better than the plain-greedy `TCAT` chain's `3.0e-05` — exactly the failure
 mode beam search exists to catch.
 
+### Full recursive beam search: `beam_recursive` and `...fullrecursive`
+
+`beam_width` alone (`cluster.next_cluster_beam`) only diversifies the step-0
+choice; each of the `k` chains is then grown by its own independent greedy
+search, so a promising *combination* that only becomes visible a few steps
+into some chain is still invisible to the others. `beam_recursive=True`
+(`cluster.next_cluster_beam_recursive`) removes that limit: at *every* step
+it scores every active beam's candidate extensions, globally re-ranks all of
+them together, and keeps only the best `beam_width` overall — which can mean
+one strong beam produces several of the survivors while a weaker one drops
+out, or a beam that looked mediocre a step ago suddenly pulls ahead. A beam
+that drops out (no viable next candidate, or loses the global competition)
+isn't discarded — its current state joins an archive of completed candidate
+answers, and the single best state in that whole archive (not necessarily
+the longest-lived beam) is promoted to `tree<n>.tab`; the full archive is
+written to `beams<n>.tab`. If `use_FDR`, the FDR correction is applied across
+*all* active beams' pooled candidates for that step, so a step exploring more
+combinations is held to a correspondingly stricter bar.
+
+This costs up to `beam_width` times more work at every step (vs. paying that
+cost only once, at step 0, for `next_cluster_beam`) — still minutes on
+`comps/paper.bh`-sized data with the vectorised search. `comps/paper.bh.strict.beam.fullrecursive`
+(`paper.bh.strict` + `beam_width=5`, `beam_recursive=True`) demonstrates it on
+region r1s: the archive contains several 3-4 motif combinations that kept
+finding a next candidate good enough to extend with, but none of them beat
+the 2-motif cluster `TGTG`+`TCAT` (fisher `2.8e-08`) that the recursive search
+correctly recognises as the actual best answer.
+
+### A note on `perms`
+
+Bumped the example configs' `perms` from `200` to `1000` going forward: the
+empirical p-value floor is `1/(perms+1)`, so `1000` gives a floor
+(`~0.001`) that lines up with `cluster_stop_thr`, at a modest few-minutes
+cost increase over `200` (per-motif cost scales roughly with `perms`, but
+most of a run's total time is fixed per-region/per-step overhead, not
+per-motif). `10000`+ only pays off if you need to resolve significance
+*below* `0.001`, not just detect that something clears it.
+
 ## Authors
 
 [RNAmotifs2](https://github.com/grexor/rnamotifs2) is maintained by [Gregor Rot](https://grexor.github.io) in collaboration with several research laboratories worldwide.
