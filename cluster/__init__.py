@@ -3,8 +3,6 @@ import sys
 import rnamotifs2
 import operator
 import pickle
-from queue import Queue
-from threading import Thread
 import pybio
 
 max_steps = 4
@@ -63,6 +61,8 @@ def next_cluster(comps, genome, region, cn, pth=0.5, sf="r"):
     pickle_folder = os.path.join(region_folder, "pickle")
     rnamotifs2.data.read(comps)
     rnamotifs2.sequence.save(comps, genome)
+    rnamotifs2.sequence.load(comps)
+    rnamotifs2.perm.compute(comps, genome, ["_base_"])
 
     for step in range(0, max_steps):
         if step==0:
@@ -73,32 +73,17 @@ def next_cluster(comps, genome, region, cn, pth=0.5, sf="r"):
                 draw(comps, genome, region, cn, steps=step)
                 return # stop tree construction
 
-        num_worker_threads = rnamotifs2.data.cores
-        q = Queue()
-        def worker():
-            while True:
-                task = q.get()
-                os.system(task)
-                q.task_done()
         tasks = []
         for motif in motifs:
             cluster = motif + cmotif
             pickle_file = os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn, "_".join(sorted(motif)), "_".join(sorted(cmotif))))
             if not os.path.exists(pickle_file):
-                command = "rnamotifs2.motif.cluster %s %s %s %s %s %s %s %s" % (comps, genome, region, "_".join(motif), cn, "_".join(cmotif), pth, sf)
-                tasks.append(command)
+                tasks.append(("cluster", comps, genome, region, "_".join(motif), cn, "_".join(cmotif), pth, sf))
             # raw results, without filtering
             pickle_file = os.path.join(pickle_folder, "c%s.%s.pickle" % (cn, "_".join(sorted(cluster))))
             if not os.path.exists(pickle_file):
-                command = "rnamotifs2.motif %s %s %s %s %s %s %s" % (comps, genome, region, "_".join(cluster), pth, 0, sf)
-                tasks.append(command)
-        for i in range(num_worker_threads):
-             t = Thread(target=worker)
-             t.daemon = True
-             t.start()
-        for task in tasks:
-            q.put(task)
-        q.join()
+                tasks.append(("motif", comps, genome, region, "_".join(cluster), pth, 0, sf))
+        rnamotifs2.pool.run(tasks, rnamotifs2.data.cores)
 
         assemble(comps, genome, region, cn, step)
 

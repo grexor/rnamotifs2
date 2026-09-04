@@ -437,6 +437,12 @@ def v17_apa(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={},
     return vectors_sum, rcounts, choosen_h, rfilter, nums, present
 
 def areas(comps, motif="YCAY", hw=15, h=None, pth=4):
+    if os.environ.get("RNAMOTIFS2_REFERENCE") != "1":
+        return rnamotifs2.fastsearch.areas(comps, motif=motif, hw=hw, h=h, pth=pth)
+    return areas_reference(comps, motif=motif, hw=hw, h=h, pth=pth)
+
+
+def areas_reference(comps, motif="YCAY", hw=15, h=None, pth=4):
     nums = Counter() # frequencies of s/e/c, key = r1.s, r1.e, ...
     area = 0
     vectors = {}

@@ -15,10 +15,11 @@ comps = args.comps
 rnamotifs2.data.read_config(comps)
 rnamotifs2.data.read(comps)
 
-# remove all old folders
+# remove old per-region output, but keep the shared sequence cache
+# (pickle/sequence.pickle); it is signature-checked and rebuilt on any change
 folders = glob.glob(os.path.join(rnamotifs2.path.comps_folder, comps, "*"))
 for f in folders:
-    if os.path.isdir(f):
+    if os.path.isdir(f) and os.path.basename(f) != "pickle":
         shutil.rmtree(f)
 
 for region in ["r1s", "r1e", "r2s", "r2e", "r3s", "r3e"]:
