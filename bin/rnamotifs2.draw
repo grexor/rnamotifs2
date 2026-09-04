@@ -8,9 +8,10 @@ import random
 random.seed(42)
 import glob
 import time
+import datetime
+import html
 import argparse
 
-import datetime, time
 dt = datetime.datetime.today()
 nocache = time.mktime(dt.timetuple()) # datetime in seconds
 
@@ -19,12 +20,43 @@ parser.add_argument('-comps', action="store", dest="comps", default=None)
 args = parser.parse_args()
 
 comps_folder = os.path.join(rnamotifs2.path.comps_folder, args.comps)
+rnamotifs2.data.read_config(args.comps)
 rnamotifs2.data.read(args.comps)
 rnamotifs2.sequence.load(args.comps)
 
-num_s, num_e, num_c = rnamotifs2.data.dist["s"], rnamotifs2.data.dist["e"], rnamotifs2.data.dist["c"]
+num_s, num_e, num_c = rnamotifs2.data.dist.get("s", 0), rnamotifs2.data.dist.get("e", 0), rnamotifs2.data.dist.get("c", 0)
 print("RNA maps")
 print("silenced=%s, enhanced=%s, controls=%s" % (num_s, num_e, num_c))
+
+# ---- run settings, shown in the report header --------------------------
+comps_tab = os.path.join(comps_folder, "%s.tab" % args.comps)
+comps_config = os.path.join(comps_folder, "%s.config" % args.comps)
+use_fdr = bool(getattr(rnamotifs2.data, "use_FDR", False))
+perms = int(getattr(rnamotifs2.config, "perms", 0))
+beam_width = int(getattr(rnamotifs2.data, "beam_width", 1))
+beam_recursive = bool(getattr(rnamotifs2.data, "beam_recursive", False))
+if beam_width <= 1:
+    search_mode = "greedy (beam_width=1)"
+elif beam_recursive:
+    search_mode = "recursive beam search (beam_width=%d)" % beam_width
+else:
+    search_mode = "beam search, restart-only (beam_width=%d)" % beam_width
+
+settings = [
+    ("comparison", args.comps),
+    ("data file", os.path.basename(comps_tab)),
+    ("config file", os.path.basename(comps_config) if os.path.exists(comps_config) else "(defaults)"),
+    ("genome", str(getattr(rnamotifs2.data, "genome", "?"))),
+    ("data type", str(getattr(rnamotifs2.data, "data_type", "?"))),
+    ("half-window (hw)", str(getattr(rnamotifs2.data, "hw", "?"))),
+    ("events", "silenced=%s, enhanced=%s, control=%s" % (num_s, num_e, num_c)),
+    ("motif search", search_mode),
+    ("permutations", "%d%s" % (perms, "" if perms > 0 else " (off - p_emp not meaningful)")),
+    ("multiple-testing correction", "Benjamini-Hochberg FDR" if use_fdr else "none (raw Fisher p-values)"),
+    ("base motif threshold", str(getattr(rnamotifs2.data, "base_motif_thr", "?"))),
+    ("cluster stop threshold", str(getattr(rnamotifs2.data, "cluster_stop_thr", "?"))),
+    ("cores", str(getattr(rnamotifs2.data, "cores", "?"))),
+]
 
 configs = {}
 
@@ -35,196 +67,201 @@ for region in ["r1s", "r1e", "r2s", "r2e", "r3s", "r3e"]:
         fname = os.path.join(comps_folder, region, "results0.tab")
         if os.path.exists(fname):
             f = open(fname, "rt")
-            header = f.readline()
+            header = f.readline().replace("\r", "").replace("\n", "").split("\t")
             r = f.readline()
-            motif_cluster, h, fisher = r.replace("\n", "").replace("\r", "").split("\t")[:3]
-            fisher = float(fisher)
-            h = int(h)
-            motif_cluster = [motif_cluster]
-            if fisher<0.05:
-                areas, _, stats = rnamotifs2.search.areas(args.comps, motif=motif_cluster, hw=15, h=h)
-                configs.setdefault(region, []).append((fisher, h, motif_cluster, areas, stats))
+            if r.strip():
+                row = dict(zip(header, r.replace("\n", "").replace("\r", "").split("\t")))
+                fisher = float(row["fisher"])
+                h = int(row["h"])
+                motif_cluster = [row["motif"]]
+                if fisher<0.05:
+                    areas, _, stats = rnamotifs2.search.areas(args.comps, motif=motif_cluster, hw=15, h=h)
+                    info = {"region": region, "cn": 0, "cluster": motif_cluster, "fisher": row["fisher"],
+                            "h": row["h"], "ig": row.get("ig"), "raw_ig": row.get("raw_ig"),
+                            "p_emp": float(row["p_emp"]) if row.get("p_emp") not in (None, "") else None,
+                            "n_steps": 1, "found.t": None, "found.c": None, "absent.t": None, "absent.c": None,
+                            "specificity": None, "removed.t [%s]" % num_s: None}
+                    configs.setdefault(region, []).append((fisher, h, motif_cluster, areas, stats, info))
     else: # RESULTS from tree
         for index, tree_fname in enumerate(trees):
-            fisher, h, motif_cluster = rnamotifs2.draw.read_tree(tree_fname)
+            info = rnamotifs2.draw.read_tree_full(tree_fname)
+            h = int(info["h"])
+            motif_cluster = info["cluster"]
             areas, _, stats = rnamotifs2.search.areas(args.comps, motif=motif_cluster, hw=15, h=h)
-            configs.setdefault(region, []).append((fisher, h, motif_cluster, areas, stats))
-
-# examples of custom defined clusters that are drawn with other results
-
-#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["YTCY", "YCTY"], h=5)
-#configs.setdefault("r4", []).append((None, h, ["YTCY", "YCTY"], areas, stats))
-
-#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["YTCY", "YCTY"], h=10)
-#configs.setdefault("r4", []).append((None, h, ["YTCY", "YCTY"], areas, stats))
-
-#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["YTCY", "YCTY"], h=15)
-#configs.setdefault("r4", []).append((None, h, ["YTCY", "YCTY"], areas, stats))
-
-#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["YTCY", "YCTY"], h=20)
-#configs.setdefault("r4", []).append((None, h, ["YTCY", "YCTY"], areas, stats))
-
-#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["YCAY"], h=5)
-#configs.setdefault("r4", []).append((None, h, ["YCAY"], areas, stats))
-
-#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["YCAY"], h=10)
-#configs.setdefault("r4", []).append((None, h, ["YCAY"], areas, stats))
-
-#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["YCAY"], h=15)
-#configs.setdefault("r4", []).append((None, h, ["YCAY"], areas, stats))
-
-#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["YCAY"], h=20)
-#configs.setdefault("r4", []).append((None, h, ["YCAY"], areas, stats))
-
-#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["TTTA", "TTAT"], h=5)
-#configs.setdefault("r4", []).append((None, h, ["TTTA", "TTAT"], areas, stats))
-
-#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["TTTA", "TTAT"], h=10)
-#configs.setdefault("r4", []).append((None, h, ["TTTA", "TTAT"], areas, stats))
-
-#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["TTTA", "TTAT"], h=15)
-#configs.setdefault("r4", []).append((None, h, ["TTTA", "TTAT"], areas, stats))
-
-#areas, h, stats = rnamotifs2.search.areas(args.comps, motif=["TTTA", "TTAT"], h=20)
-#configs.setdefault("r4", []).append((None, h, ["TTTA", "TTAT"], areas, stats))
+            configs.setdefault(region, []).append((float(info["fisher"]), h, motif_cluster, areas, stats, info))
 
 if not os.path.exists(os.path.join(comps_folder, "rnamap")):
     os.makedirs(os.path.join(comps_folder, "rnamap"))
 
-# draw motifs
-f = open(os.path.join(comps_folder, "rnamap", "index.html"), "wt")
-f.write("<html>\n")
-
-head = """<head>
-<script type="text/javascript" src="../../software/js/jquery-1.8.0.min.js"></script>
-<script type="text/javascript" src="../../software/js/jquery-ui-1.8.23.custom.min.js"></script>
-
-<link rel="stylesheet" type="text/css" href="../../software/tooltipster-master/css/tooltipster.css" />
-<script type="text/javascript" src="../../software/tooltipster-master/js/jquery.tooltipster.min.js"></script>
-
-<script type="text/javascript" src="../../highslide/highslide/highslide.js"></script>
-<link rel="stylesheet" type="text/css" href="../../highslide/highslide/highslide.css" />
-<script type="text/javascript">
-    hs.graphicsDir = '../../highslide/highslide/graphics/';
-    hs.showCredits = false;
-</script>
-
-<style>
-
-.highslide img {
-   border: 0px;
-   outline: none;
-}
-
-a {
-    text-decoration: none;
-}
-
-div {
-    font-size: 13px;
-}
-
-.my-tips {
-	border-radius: 5px;
-	border: 0.5px solid #000;
-	background: #6c6c6c;
-	color: #fff;
-}
-
-/* Use this next selector to style things like font-size and line-height: */
-.my-tips .tooltipster-content {
-	font-family: Arial, sans-serif;
-	font-size: 12px;
-	line-height: 13px;
-	padding: 2px 3px;
-}
-</style>
-
-</head>"""
-
-f.write(head+"\n")
-
-f.write("<body>\n")
-f.write("<div>RNAmotifs2: <b>%s</b>, %s %s</div><br>" % (args.comps, time.strftime("%d.%m.%Y"), time.strftime("%H:%M:%S")))
-f.write("<table style='border-collapse: collapse; border-spacing: 0px; font-size: 12px;'><tr><td align=center>motif cluster</td><td align=center width=15px>R1</td><td align=center width=15px>R2</td><td align=center width=15px>R3</td><td align=center>-50..200 (0=skip.start)</td><td align=center>-200..50 (0=in.start)</td><td align=center>-50..200 (0=in.stop)</td><td align=center>-200..50 (0=skip.stop)</td></tr>\n")
-
 # find upper limit for ES
 max_es = 0
-
 for region, tree_list in configs.items():
     for tree in tree_list:
-        fisher, h, motif_list, area, stats = tree
-
-        # if we only have s / e features, take care of the others so the drawing is done
+        fisher, h, motif_list, area, stats, info = tree
         for t in ["s", "e", "c"]:
             if t not in area:
                 area[t] = [[0]*251, [0]*251, [0]*251, [0]*251]
-
         logs, loge = rnamotifs2.compute.es(area["s"], area["e"], area["c"])
         for a in range(0, 4):
             max_es = max(max_es, max(pybio.utils.smooth(logs[a])), max(pybio.utils.smooth(loge[a])))
 
 for region, tree_list in configs.items():
     for index, tree in enumerate(tree_list):
-        fisher, h, motif_list, area, stats = tree
+        fisher, h, motif_list, area, stats, info = tree
         logs, loge = rnamotifs2.compute.es(area["s"], area["e"], area["c"])
         for a in range(0, 4):
             image_filename = "%s_tree%s_area%s" % (region, index, a+1)
-            draw_sum = rnamotifs2.draw.area("+".join(motif_list), logs[a], loge[a], os.path.join(comps_folder, "rnamap", image_filename), area=a, region=region, limy=max_es, stats=stats)
+            rnamotifs2.draw.area("+".join(motif_list), logs[a], loge[a], os.path.join(comps_folder, "rnamap", image_filename), area=a, region=region, limy=max_es, stats=stats)
 
 regions = sorted(configs.keys())
 
+# ---- HTML -----------------------------------------------------------------
+
+def fmt_p(x):
+    if x is None or x == "":
+        return "&mdash;"
+    x = float(x)
+    return "%.2e" % x if x < 0.001 else "%.4f" % x
+
+def fmt_num(x):
+    return "&mdash;" if x in (None, "") else str(x)
+
+CSS = """
+:root {
+    --ink: #1b2430; --sub: #5b6b7c; --line: #e3e8ee; --bg: #f6f8fa; --card: #ffffff;
+    --blue: #2f6fed; --red: #e6494f; --accent: #f7f9fb;
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 32px 40px 64px; background: var(--bg);
+       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+       color: var(--ink); }
+h1 { font-size: 22px; margin: 0 0 2px; }
+.sub { color: var(--sub); font-size: 13px; margin-bottom: 24px; }
+.mono { font-family: "SF Mono", Menlo, Consolas, monospace; }
+
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+         padding: 18px 22px; margin-bottom: 28px; box-shadow: 0 1px 2px rgba(20,30,40,.04); }
+.panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em;
+            color: var(--sub); margin: 0 0 14px; }
+.settings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+                 gap: 10px 24px; font-size: 13px; }
+.settings-grid .k { color: var(--sub); }
+.settings-grid .v { font-weight: 600; }
+
+.region-heading { font-size: 15px; font-weight: 700; margin: 30px 0 12px; color: var(--ink); }
+.region-heading .badge { display: inline-block; font-size: 11px; font-weight: 700; color: #fff;
+                          border-radius: 4px; padding: 2px 7px; margin-left: 8px; vertical-align: 2px; }
+.badge.s { background: var(--blue); }
+.badge.e { background: var(--red); }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+        padding: 16px 20px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(20,30,40,.04); }
+.card-top { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap;
+            gap: 8px 20px; margin-bottom: 10px; }
+.cluster-name { font-size: 17px; font-weight: 700; }
+.tree-link { font-size: 12px; color: var(--sub); }
+.tree-link a { color: var(--blue); }
+
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+             gap: 10px 18px; margin: 12px 0 16px; padding: 12px 14px; background: var(--accent);
+             border-radius: 8px; font-size: 12.5px; }
+.stat-grid .label { color: var(--sub); display: block; font-size: 10.5px;
+                     text-transform: uppercase; letter-spacing: .03em; }
+.stat-grid .value { font-weight: 700; font-size: 14px; }
+
+.images { display: flex; gap: 10px; flex-wrap: wrap; }
+.images figure { margin: 0; }
+.images img { width: 250px; display: block; border-radius: 6px; border: 1px solid var(--line); }
+.images figcaption { font-size: 10.5px; color: var(--sub); text-align: center; margin-top: 4px; }
+.images a { text-decoration: none; }
+"""
+
+parts = []
+parts.append("<h1>RNAmotifs2 &mdash; %s</h1>" % html.escape(args.comps))
+parts.append("<div class='sub'>generated %s %s</div>" % (time.strftime("%d.%m.%Y"), time.strftime("%H:%M:%S")))
+
+parts.append("<div class='panel'><h2>Run settings</h2><div class='settings-grid'>")
+for k, v in settings:
+    parts.append("<div class='k'>%s</div><div class='v mono'>%s</div>" % (html.escape(k), html.escape(str(v))))
+parts.append("</div></div>")
+
 for region in regions:
     tree_list = configs[region]
+    region_name = {"r1": "R1 (upstream)", "r2": "R2 (splice site)", "r3": "R3 (downstream)"}.get(region[:-1], region)
+    direction = "silenced" if region[-1] == "s" else "enhanced"
+    badge_class = region[-1]
+    any_drawn = False
+
+    rows_html = []
     for index, tree in enumerate(tree_list):
-        tree_file = "https://expressrna.org/rnamotifs2/%s/%s/%s" % (args.comps, region, "tree%s.tab" % index)
-        fisher, h, motif_list, area, stats = tree
+        fisher, h, motif_list, area, stats, info = tree
         logs, loge = rnamotifs2.compute.es(area["s"], area["e"], area["c"])
 
-        # only draw trees with value > 1/3 * max_es in at least one area
-        draw = False
+        draw_row = False
         for a in range(0, 4):
-            if max(logs[a])>max_es/3 or max(loge[a])>max_es/3:
-                draw = True
-        if not draw and region!="r4":
+            if max(logs[a]) > max_es/3 or max(loge[a]) > max_es/3:
+                draw_row = True
+        if not draw_row:
             continue
+        any_drawn = True
 
-        f.write("<tr>")
-        if region!="r4":
-            f.write("<td align=right valign=center width=30px>%s<br><a href=%s target=_new>tree=%s</a><br>h=%s</td>" % ("+".join(motif_list), tree_file, index, h))
-        else:
-            f.write("<td align=right valign=center width=30px>%s<br>added<br>h=%s</td>" % ("+".join(motif_list), h))
-        for r in ["r1", "r2", "r3"]:
-            if region[:-1]==r:
-                if region[-1]=="e":
-                    color = "#ff0000"
-                else:
-                    color = "#0000ff"
-            else:
-                color = "#aaaaaa"
-            title = ""
-            f.write("<td valign=center align=center width=15px>")
-            f.write("<svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='18px' height='18px'>")
-            cid = ""
-            f.write("<circle id='%s' %s cx=9 cy=9 r=7 stroke=#ffffff stroke-width=1 fill='%s'/>" % (cid, title, color))
-            f.write("</svg>")
-            f.write("</td>")
-        if region[:-1] in ["r1", "r2", "r3"]:
-            for a in range(0, 4):
-                f.write("<td>")
-                image_filename = "%s_tree%s_area%s.png?nocache=%s" % (region, index, a+1, nocache)
-                f.write("<a href=%s class='highslide' onclick='return hs.expand(this)'><img src=%s width=250></a>" % (image_filename, image_filename))
-                f.write("</td>")
-        if region in ["r4"]:
-            for a in range(0, 4):
-                f.write("<td>")
-                image_filename = "%s_tree%s_area%s.png?nocache=%s" % (region, index, a+1, nocache)
-                f.write("<a href=%s class='highslide' onclick='return hs.expand(this)'><img src=%s width=250></a>" % (image_filename, image_filename))
-                f.write("</td>")
-        f.write("</tr>")
-f.write("\n")
-f.write("</table>")
+        tree_file = "https://expressrna.org/rnamotifs2/%s/%s/%s" % (args.comps, region, "tree%s.tab" % index)
+        p_emp = info.get("p_emp")
+        n_steps = info.get("n_steps", "?")
 
-f.write("</body>")
-f.write("</html>\n")
-f.close()
+        stat_cells = []
+        stat_cells.append(("FDR q-value" if use_fdr else "p-value (Fisher)", fmt_p(fisher)))
+        stat_cells.append(("perm. p-value (n=%d)" % perms if perms > 0 else "perm. p-value", fmt_p(p_emp) if perms > 0 else "&mdash;"))
+        stat_cells.append(("motifs in cluster", fmt_num(n_steps)))
+        stat_cells.append(("h (window height)", fmt_num(h)))
+        stat_cells.append(("specificity", fmt_num(info.get("specificity"))))
+        stat_cells.append(("found (%s)" % direction, fmt_num(info.get("found.t"))))
+        stat_cells.append(("found (control)", fmt_num(info.get("found.c"))))
+        stat_cells.append(("information gain", fmt_num(info.get("ig"))))
+
+        stat_html = "".join("<div><span class='label'>%s</span><span class='value'>%s</span></div>" % (html.escape(lbl), val)
+                            for lbl, val in stat_cells)
+
+        img_html = []
+        area_captions = {0: "skip.start", 1: "in.start", 2: "in.stop", 3: "skip.stop"}
+        for a in range(0, 4):
+            image_filename = "%s_tree%s_area%s.png?nocache=%s" % (region, index, a+1, nocache)
+            img_html.append(
+                "<figure><a href=%s target=_blank><img src=%s></a>"
+                "<figcaption>area %d (0=%s)</figcaption></figure>" % (
+                    image_filename, image_filename, a+1, area_captions[a]))
+
+        rows_html.append("""
+<div class='card'>
+  <div class='card-top'>
+    <div class='cluster-name mono'>%s</div>
+    <div class='tree-link'><a href=%s target=_new>tree%s.tab</a> on expressRNA</div>
+  </div>
+  <div class='stat-grid'>%s</div>
+  <div class='images'>%s</div>
+</div>""" % ("+".join(motif_list), tree_file, index, stat_html, "".join(img_html)))
+
+    if not any_drawn:
+        continue
+    parts.append("<div class='region-heading'>%s <span class='badge %s'>%s</span></div>" %
+                 (html.escape(region_name), badge_class, direction.upper()))
+    parts.extend(rows_html)
+
+if len(regions) == 0 or all(len(configs[r]) == 0 for r in regions):
+    parts.append("<div class='panel'>No region reached a significant motif cluster.</div>")
+
+doc = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RNAmotifs2: %s</title>
+<style>%s</style>
+</head>
+<body>
+%s
+</body>
+</html>
+""" % (html.escape(args.comps), CSS, "\n".join(parts))
+
+with open(os.path.join(comps_folder, "rnamap", "index.html"), "wt") as f:
+    f.write(doc)

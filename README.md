@@ -39,7 +39,12 @@ Run the whole analysis (motif search, cluster growth, RNA maps) with:
 ```
 
 Output lands in `comps/<name>/`: per-region `results*.tab` / `tree*.tab` and
-`rnamap/index.html` with the RNA maps.
+`rnamap/index.html` with the RNA maps. The report opens standalone (no
+external JS/CSS — the old jquery/highslide paths only ever resolved when
+deployed under expressRNA's own asset layout) and, per region, shows the
+FDR/p-value, permutation p-value, cluster size, specificity, and support
+counts alongside the plots, plus a settings panel with the run's data file,
+genome, thresholds, permutation count and search mode.
 
 The motif search is vectorised (`rnamotifs2.fastsearch`) and runs in a
 multiprocessing pool. Set `RNAMOTIFS2_REFERENCE=1` to fall back to the original

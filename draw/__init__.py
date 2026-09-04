@@ -40,6 +40,49 @@ def read_tree(filename):
     else: # step = 0, just return one single motif
         return float(rows[-1][1]), int(rows[-1][4]), rows[-1][-2].split("_")
 
+def read_tree_full(filename):
+    """Every column of a tree{cn}.tab's last (final) row, as a dict, plus
+    p_emp - the permutation empirical p-value, which tree{cn}.tab itself
+    never carries (only results{cn}.tab / c{cn}.temp{step}.tab do) - read
+    back from the same motif-set-keyed pickle everything else in this
+    package uses, so it needs no schema change to tree{cn}.tab.
+
+    Derives region/cn from `filename` (.../<comps>/<region>/tree<cn>.tab).
+    """
+    import pickle as _pickle
+    region_folder, base = os.path.split(filename)
+    region = os.path.basename(region_folder)
+    cn = int(base[len("tree"):-len(".tab")])
+
+    f = open(filename, "rt")
+    header = f.readline().replace("\r", "").replace("\n", "").split("\t")
+    rows = [l.replace("\r", "").replace("\n", "").split("\t") for l in f if l.strip()]
+    f.close()
+    last = dict(zip(header, rows[-1]))
+
+    motif = last["motif"].split("_")
+    cmotif = last["cmotif"].split("_") if last["cmotif"] else []
+    pickle_folder = os.path.join(region_folder, "pickle")
+    if cmotif:
+        pf = os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn, "_".join(sorted(motif)), "_".join(sorted(cmotif))))
+    else:
+        pf = os.path.join(pickle_folder, "c%s.%s.pickle" % (cn, "_".join(sorted(motif))))
+
+    p_emp = None
+    if os.path.exists(pf):
+        _, test_result, _, _, _, _, _ = _pickle.load(open(pf, "rb"))
+        fisher_raw, p_emp_list, _ = test_result
+        if p_emp_list:
+            k = sum(1 for x in p_emp_list if x <= fisher_raw)
+            p_emp = (1 + k) / float(1 + len(p_emp_list))
+
+    last["region"] = region
+    last["cn"] = cn
+    last["cluster"] = motif + cmotif
+    last["p_emp"] = p_emp
+    last["n_steps"] = int(last["step"]) + 1
+    return last
+
 def area(motif, s, e, filename, area=None, region=None, limy=None, stats=None):
     import matplotlib
     matplotlib.use("Agg")
