@@ -1,9 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import os
 import sys
 import rnamotifs2
 import pybio
-import cPickle as pickle
+import pickle
 import copy
 from collections import Counter
 
@@ -38,7 +38,7 @@ rnamotifs2.data.read(comps)
 rnamotifs2.perm.compute(comps, genome, motif)
 rnamotifs2.sequence.load(comps)
 
-print "%s.%s.%s: processing; cmotif=%s" % (comps, genome, motif, cmotif)
+print("%s.%s.%s: processing; cmotif=%s" % (comps, genome, motif, cmotif))
 
 rfilter = {}
 # unfiltered data (compute or simply load)
@@ -49,11 +49,11 @@ else:
     pickle_filename = os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn, cmotif[0], "_".join(sorted(cmotif[1:]))))
 
 # get already filtered data
-_, _, _, rfilter, _, _, _ = pickle.load(open(pickle_filename))
+_, _, _, rfilter, _, _, _ = pickle.load(open(pickle_filename, "rb"))
 
 step = len(cmotif)
 base_motif, base_h = read_base_motif(comps, region, cn)
-print "base_motif=%s, motif_h=%s" % (base_motif, base_h)
+print("base_motif=%s, motif_h=%s" % (base_motif, base_h))
 
 m = getattr(rnamotifs2.search, sf)
 results = m(comps, genome, region=region, motif=search_motif, rfilter=rfilter, step=step, pth=pth, base_motif=base_motif, base_h=base_h)

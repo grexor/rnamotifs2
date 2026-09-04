@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import os
 import sys
 import rnamotifs2
@@ -29,8 +29,8 @@ for motif in motifs:
     if not os.path.exists(pickle_filename):
         continue
     index += 1
-    print "%s.%s: loading %s (%s)" % (comps, genome, "_".join(motif.split("_")), index)
-    _, test_results[motif], h[motif], _, _, _, _ = pickle.load(open(pickle_filename))
+    print("%s.%s: loading %s (%s)" % (comps, genome, "_".join(motif.split("_")), index))
+    _, test_results[motif], h[motif], _, _, _, _ = pickle.load(open(pickle_filename, "rb"))
 
 # FDR
 """

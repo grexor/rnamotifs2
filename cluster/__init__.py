@@ -2,8 +2,8 @@ import os
 import sys
 import rnamotifs2
 import operator
-import cPickle as pickle
-from Queue import Queue
+import pickle
+from queue import Queue
 from threading import Thread
 import pybio
 
@@ -124,11 +124,11 @@ def assemble(comps, genome, region, cn, step):
         pickle_filename = os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn, "_".join(sorted(motif)), "_".join(sorted(cmotif))))
         if os.path.exists(pickle_filename):
             index += 1
-            print "%s.%s: loading %s (%s)" % (comps, genome, k_string, index)
-            _, test_results[k_string], h[k_string], _, _, _, _ = pickle.load(open(pickle_filename))
+            print("%s.%s: loading %s (%s)" % (comps, genome, k_string, index))
+            _, test_results[k_string], h[k_string], _, _, _, _ = pickle.load(open(pickle_filename, "rb"))
         pickle_filename = os.path.join(pickle_folder, "c0.%s.pickle" % k_string)
         if os.path.exists(pickle_filename):
-            _, rtest_results[k_string], _, _, _, _, _ = pickle.load(open(pickle_filename))
+            _, rtest_results[k_string], _, _, _, _, _ = pickle.load(open(pickle_filename, "rb"))
 
     data = []
     index = 0
@@ -204,9 +204,9 @@ def draw(comps, genome, region, cn, steps=4):
         removed_control = 0
 
         if cmotif!=[]:
-            _, _, _, _, nums, rcounts, _ = pickle.load(open(os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn, "_".join(sorted(motif)), "_".join(sorted(cmotif))))))
+            _, _, _, _, nums, rcounts, _ = pickle.load(open(os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn, "_".join(sorted(motif)), "_".join(sorted(cmotif)))), "rb"))
         else:
-            _, _, _, _, nums, rcounts, _ = pickle.load(open(os.path.join(pickle_folder, "c%s.%s.pickle" % (cn, "_".join(sorted(motif))))))
+            _, _, _, _, nums, rcounts, _ = pickle.load(open(os.path.join(pickle_folder, "c%s.%s.pickle" % (cn, "_".join(sorted(motif)))), "rb"))
 
         # find out where the previous tree was cut
         # and get filtered exons
@@ -234,14 +234,14 @@ def draw(comps, genome, region, cn, steps=4):
                 pickle_filename = os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn-1, m1[0], "_".join(sorted(m2))))
             else:
                 pickle_filename = os.path.join(pickle_folder, "c%s.%s.pickle" % (cn-1, m1[0]))
-            _, _, _, rfilter, _, _, _ = pickle.load(open(pickle_filename))
+            _, _, _, rfilter, _, _, _ = pickle.load(open(pickle_filename, "rb"))
         else:
             rfilter = {}
 
         if len(cmotif)>1:
-            _, _, _, rfilter, _, _, _ = pickle.load(open(os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn, cmotif[0], "_".join(sorted(cmotif[1:]))))))
+            _, _, _, rfilter, _, _, _ = pickle.load(open(os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn, cmotif[0], "_".join(sorted(cmotif[1:])))), "rb"))
         elif len(cmotif)==1:
-            _, _, _, rfilter, _, _, _ = pickle.load(open(os.path.join(pickle_folder, "c%s.%s.pickle" % (cn, "_".join(cmotif)))))
+            _, _, _, rfilter, _, _, _ = pickle.load(open(os.path.join(pickle_folder, "c%s.%s.pickle" % (cn, "_".join(cmotif))), "rb"))
 
         for k in rfilter.keys():
             if k.startswith("t"):

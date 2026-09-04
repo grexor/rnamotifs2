@@ -3,9 +3,6 @@ import sys
 import rnamotifs2
 import math
 import numpy as np
-from sklearn.neighbors import KernelDensity
-from scipy.stats import gaussian_kde
-from scipy.stats.distributions import norm
 import pybio
 
 def read_tree(filename):
@@ -28,7 +25,7 @@ def read_tree(filename):
 
 def area(motif, s, e, filename, area=None, region=None, limy=None, stats=None):
     import matplotlib
-    matplotlib.use("Agg", warn=False)
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     import math
     import gzip
@@ -124,9 +121,9 @@ def area(motif, s, e, filename, area=None, region=None, limy=None, stats=None):
     return sum(v)
 
 def area_apa(motif, s, e, filename, area=None, region=None, limy=None, fisher=None):
-    print motif
+    print(motif)
     import matplotlib
-    matplotlib.use("Agg", warn=False)
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     import math
     import gzip

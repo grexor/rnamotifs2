@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import os
 import sys
 import rnamotifs2
@@ -23,8 +23,8 @@ rnamotifs2.data.read(args.comps)
 rnamotifs2.sequence.load(args.comps)
 
 num_s, num_e, num_c = rnamotifs2.data.dist["s"], rnamotifs2.data.dist["e"], rnamotifs2.data.dist["c"]
-print "RNA maps"
-print "silenced=%s, enhanced=%s, controls=%s" % (num_s, num_e, num_c)
+print("RNA maps")
+print("silenced=%s, enhanced=%s, controls=%s" % (num_s, num_e, num_c))
 
 configs = {}
 
@@ -172,8 +172,7 @@ for region, tree_list in configs.items():
             image_filename = "%s_tree%s_area%s" % (region, index, a+1)
             draw_sum = rnamotifs2.draw.area("+".join(motif_list), logs[a], loge[a], os.path.join(comps_folder, "rnamap", image_filename), area=a, region=region, limy=max_es, stats=stats)
 
-regions = configs.keys()
-regions.sort()
+regions = sorted(configs.keys())
 
 for region in regions:
     tree_list = configs[region]

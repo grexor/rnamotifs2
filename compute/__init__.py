@@ -34,7 +34,7 @@ def es_apa(data_s, data_e, data_c):
     return logs, loge
 
 def test(comps, genome, motif, rcounts, nums): # rcounts
-    print "%s.%s.%s: fisher test on real and perm data" % (comps, genome, motif)
+    print("%s.%s.%s: fisher test on real and perm data" % (comps, genome, motif))
     results = {}
     for rt in ["r1", "r2", "r3"]:
         for event_class in ["s", "e"]:
@@ -86,7 +86,7 @@ def test(comps, genome, motif, rcounts, nums): # rcounts
     return test_results
 
 def rtest(comps, genome, motif, rcounts, nums): # rcounts
-    print "%s.%s.%s: fisher test on real and perm data" % (comps, genome, motif)
+    print("%s.%s.%s: fisher test on real and perm data" % (comps, genome, motif))
     val_class = rcounts.get("t", 0)
     val_control = rcounts.get("c", 0)
     #num_class = nums.get("t.all", 0) # v_18

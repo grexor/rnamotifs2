@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import os
 import sys
 import rnamotifs2
@@ -28,14 +28,14 @@ for region in ["r1s", "r1e", "r2s", "r2e", "r3s", "r3e"]:
     for index, tree_fname in enumerate(trees):
         rnamotifs2.data.read(args.comps)
         rnamotifs2.sequence.load(args.comps)
-        print region, tree_fname, args.comps
+        print(region, tree_fname, args.comps)
         fisher, h, motif_cluster = rnamotifs2.draw.read_tree(tree_fname)
         areas, _, stats = rnamotifs2.search.areas(args.comps, motif=motif_cluster, hw=15, h=h)
         configs.setdefault(region, []).append((fisher, h, motif_cluster, areas, stats, args.comps, index))
         for cid in comps:
             if cid==args.comps:
                 continue
-            print region, tree_fname, cid
+            print(region, tree_fname, cid)
             rnamotifs2.data.read(cid)
             rnamotifs2.sequence.load(cid)
             fisher, h, motif_cluster = rnamotifs2.draw.read_tree(tree_fname)
@@ -114,8 +114,8 @@ for region, tree_list in configs.items():
             if comps==args.comps:
                 max_ref = max(max_ref, max(pybio.utils.smooth(logs[a])), max(pybio.utils.smooth(loge[a])))
 
-print "max_es=%s" % max_es
-print "max_ref=%s" % max_ref
+print("max_es=%s" % max_es)
+print("max_ref=%s" % max_ref)
 
 for region, tree_list in configs.items():
     for index, tree in enumerate(tree_list):
@@ -125,8 +125,7 @@ for region, tree_list in configs.items():
             image_filename = "%s_tree%s_area%s.png" % (region, index, a+1)
             draw_sum = rnamotifs2.draw.area(", ".join(motif_list), logs[a], loge[a], os.path.join(comps_folder, "rnamap", image_filename), area=a, region=region, limy=max_es, stats=stats)
 
-regions = configs.keys()
-regions.sort()
+regions = sorted(configs.keys())
 
 for region in regions:
     tree_list = configs[region]

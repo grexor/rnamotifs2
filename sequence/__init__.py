@@ -11,7 +11,7 @@ import pybio
 import math
 from fisher import pvalue
 import random
-import cPickle as pickle
+import pickle
 
 PAS_hexamers = [
     'AATAAA',
@@ -34,51 +34,51 @@ def coords(strand, skip_start, in_start, in_stop, skip_stop, max_intron=200, max
     downintron_len = skip_stop - in_stop + 1
     if strand=="+":
         r1_exon = max_exon
-        r1_intron = min(max_intron, upintron_len/2)
+        r1_intron = min(max_intron, upintron_len//2)
         r1_start = skip_start-r1_exon
         r1_stop = skip_start + r1_intron
 
-        r2_intron = min(max_intron, upintron_len/2)
-        r2_exon = min(max_exon, exon_len/2)
+        r2_intron = min(max_intron, upintron_len//2)
+        r2_exon = min(max_exon, exon_len//2)
         r2_start = in_start - r1_intron
         r2_stop = in_start + r2_exon
 
-        r3_intron = min(max_intron, downintron_len/2)
-        r3_exon = min(50, exon_len/2)
+        r3_intron = min(max_intron, downintron_len//2)
+        r3_exon = min(50, exon_len//2)
         r3_start = in_stop - r3_exon
         r3_stop = in_stop + r3_intron
 
         r4_exon = max_exon
-        r4_intron = min(max_intron, downintron_len/2)
+        r4_intron = min(max_intron, downintron_len//2)
         r4_start = skip_stop - r4_intron
         r4_stop = skip_stop + r4_exon
     else:
         r1_exon = max_exon
-        r1_intron = min(max_intron, downintron_len/2)
+        r1_intron = min(max_intron, downintron_len//2)
         r1_start = skip_stop - r1_intron
         r1_stop = skip_stop + r1_exon
 
-        r2_intron = min(max_intron, downintron_len/2)
-        r2_exon = min(max_exon, exon_len/2)
+        r2_intron = min(max_intron, downintron_len//2)
+        r2_exon = min(max_exon, exon_len//2)
         r2_start = in_stop - r2_exon
         r2_stop = in_stop + r2_intron
 
-        r3_exon = min(max_exon, exon_len/2)
-        r3_intron = min(max_intron, upintron_len/2)
+        r3_exon = min(max_exon, exon_len//2)
+        r3_intron = min(max_intron, upintron_len//2)
         r3_start = in_start - r3_intron
         r3_stop = in_start + r3_exon
 
         r4_exon = max_exon
-        r4_intron = min(max_intron, upintron_len/2)
+        r4_intron = min(max_intron, upintron_len//2)
         r4_start = skip_start - r4_exon
         r4_stop = skip_start + r4_intron
     return (r1_exon, r1_intron, r1_start, r1_stop), (r2_exon, r2_intron, r2_start, r2_stop), (r3_exon, r3_intron, r3_start, r3_stop), (r4_exon, r4_intron, r4_start, r4_stop)
 
 def load(comps):
-    print "%s: loading sequences" % comps
+    print("%s: loading sequences" % comps)
     pickle_folder = os.path.join(rnamotifs2.path.comps_folder, comps, "pickle")
     pickle_filename = os.path.join(pickle_folder, "sequence.pickle")
-    rnamotifs2.sequence.sequence = pickle.load(open(pickle_filename))
+    rnamotifs2.sequence.sequence = pickle.load(open(pickle_filename, "rb"))
 
 def save(comps, genome, hw=15):
     if rnamotifs2.data.data_type=="apa":

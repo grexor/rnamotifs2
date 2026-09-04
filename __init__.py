@@ -5,17 +5,17 @@ RNAmotifs2
 import rnamotifs2
 import os
 import pybio
-import data
-import search
-import compute
-import draw
-import path
-import config
-import perm
-import sequence
-import cluster
-import results
-from Queue import Queue
+from . import data
+from . import search
+from . import compute
+from . import draw
+from . import path
+from . import config
+from . import perm
+from . import sequence
+from . import cluster
+from . import results
+from queue import Queue
 from threading import Thread
 import random
 import operator
@@ -47,7 +47,7 @@ def start(comps, region, cn, pth):
         os.makedirs(os.path.join(pickle_folder))
 
     # make sequences
-    print "%s.%s: saving sequences to pickle" % (comps, rnamotifs2.data.genome)
+    print("%s.%s: saving sequences to pickle" % (comps, rnamotifs2.data.genome))
     rnamotifs2.sequence.save(comps, rnamotifs2.data.genome)
 
     start_cluster(comps, rnamotifs2.data.genome, region, cn, pth, sf)
@@ -74,7 +74,7 @@ def start_cluster(comps, genome, region, cn, pth, sf):
         pickle_file = os.path.join(pickle_folder, "c%s.%s.pickle" % (cn, "_".join(sorted(motif.split("_")))))
         if not os.path.exists(pickle_file):
             command = "rnamotifs2.motif %s %s %s %s %s %s %s" % (comps, genome, region, "_".join(motif.split("_")), pth, cn, sf)
-            print "COMMAND=%s" % command
+            print("COMMAND=%s" % command)
             tasks.append(command)
     for i in range(num_worker_threads):
          t = Thread(target=worker)
@@ -112,8 +112,8 @@ def assemble_results(comps, genome, region, cn):
         if not os.path.exists(pickle_filename):
             continue
         index += 1
-        print "%s.%s: loading %s (%s)" % (comps, genome, "_".join(motif.split("_")), index)
-        _, test_results[motif], h[motif], _, _, _, _ = pickle.load(open(pickle_filename))
+        print("%s.%s: loading %s (%s)" % (comps, genome, "_".join(motif.split("_")), index))
+        _, test_results[motif], h[motif], _, _, _, _ = pickle.load(open(pickle_filename, "rb"))
 
     # FDR
     """
@@ -197,7 +197,7 @@ def fdr(pvalues, correction_type = "Benjamini-Hochberg"):
     from numpy import array, empty
     pvalues = array(pvalues)
     n = float(pvalues.shape[0])
-    new_pvalues = empty(n)
+    new_pvalues = empty(int(n))
     if correction_type == "Bonferroni":
         new_pvalues = n * pvalues
     elif correction_type == "Bonferroni-Holm":
@@ -215,7 +215,7 @@ def fdr(pvalues, correction_type = "Benjamini-Hochberg"):
             rank = n - i
             pvalue, index = vals
             new_values.append((n/rank) * pvalue)
-        for i in xrange(0, int(n)-1):
+        for i in range(0, int(n)-1):
             if new_values[i] < new_values[i+1]:
                 new_values[i+1] = new_values[i]
         for i, vals in enumerate(values):
