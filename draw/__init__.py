@@ -17,7 +17,7 @@ def highlight_region(mpatches, ax, x0, width, edgecolor):
     y0, y1 = ax.get_ylim()
     ax.add_patch(mpatches.Rectangle([x0, y0], width, y1 - y0, color="#FFFF00", alpha=0.1, zorder=2))
     ax.add_patch(mpatches.Rectangle([x0, y0], width, y1 - y0, facecolor='none',
-                                    edgecolor=edgecolor, linewidth=3, zorder=3))
+                                    edgecolor=edgecolor, linewidth=4, zorder=3))
 
 def read_tree(filename):
     motif = []
