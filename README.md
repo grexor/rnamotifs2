@@ -41,6 +41,12 @@ Run the whole analysis (motif search, cluster growth, RNA maps) with:
 Output lands in `comps/<name>/`: per-region `results*.tab` / `tree*.tab` and
 `rnamap/index.html` with the RNA maps.
 
+The motif search is vectorised (`rnamotifs2.fastsearch`) and runs in a
+multiprocessing pool. Set `RNAMOTIFS2_REFERENCE=1` to fall back to the original
+pure-Python `search.v17` (much slower); `RNAMOTIFS2_NOPOOL=1` runs the pool
+serially. `tests/golden_r1s.py` checks the fast path reproduces the reference
+outputs bit-for-bit.
+
 ### Example: `comps/paper.bh`
 
 The bundled brain/heart splicing example ships in hg19 coordinates. It has
