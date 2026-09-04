@@ -11,7 +11,7 @@ import pybio
 import math
 from fisher import pvalue
 import random
-import cPickle as pickle
+import pickle
 
 PAS_hexamers = [
     'AATAAA',
@@ -34,51 +34,51 @@ def coords(strand, skip_start, in_start, in_stop, skip_stop, max_intron=200, max
     downintron_len = skip_stop - in_stop + 1
     if strand=="+":
         r1_exon = max_exon
-        r1_intron = min(max_intron, upintron_len/2)
+        r1_intron = min(max_intron, upintron_len//2)
         r1_start = skip_start-r1_exon
         r1_stop = skip_start + r1_intron
 
-        r2_intron = min(max_intron, upintron_len/2)
-        r2_exon = min(max_exon, exon_len/2)
+        r2_intron = min(max_intron, upintron_len//2)
+        r2_exon = min(max_exon, exon_len//2)
         r2_start = in_start - r1_intron
         r2_stop = in_start + r2_exon
 
-        r3_intron = min(max_intron, downintron_len/2)
-        r3_exon = min(50, exon_len/2)
+        r3_intron = min(max_intron, downintron_len//2)
+        r3_exon = min(50, exon_len//2)
         r3_start = in_stop - r3_exon
         r3_stop = in_stop + r3_intron
 
         r4_exon = max_exon
-        r4_intron = min(max_intron, downintron_len/2)
+        r4_intron = min(max_intron, downintron_len//2)
         r4_start = skip_stop - r4_intron
         r4_stop = skip_stop + r4_exon
     else:
         r1_exon = max_exon
-        r1_intron = min(max_intron, downintron_len/2)
+        r1_intron = min(max_intron, downintron_len//2)
         r1_start = skip_stop - r1_intron
         r1_stop = skip_stop + r1_exon
 
-        r2_intron = min(max_intron, downintron_len/2)
-        r2_exon = min(max_exon, exon_len/2)
+        r2_intron = min(max_intron, downintron_len//2)
+        r2_exon = min(max_exon, exon_len//2)
         r2_start = in_stop - r2_exon
         r2_stop = in_stop + r2_intron
 
-        r3_exon = min(max_exon, exon_len/2)
-        r3_intron = min(max_intron, upintron_len/2)
+        r3_exon = min(max_exon, exon_len//2)
+        r3_intron = min(max_intron, upintron_len//2)
         r3_start = in_start - r3_intron
         r3_stop = in_start + r3_exon
 
         r4_exon = max_exon
-        r4_intron = min(max_intron, upintron_len/2)
+        r4_intron = min(max_intron, upintron_len//2)
         r4_start = skip_start - r4_exon
         r4_stop = skip_start + r4_intron
     return (r1_exon, r1_intron, r1_start, r1_stop), (r2_exon, r2_intron, r2_start, r2_stop), (r3_exon, r3_intron, r3_start, r3_stop), (r4_exon, r4_intron, r4_start, r4_stop)
 
 def load(comps):
-    print "%s: loading sequences" % comps
+    print("%s: loading sequences" % comps)
     pickle_folder = os.path.join(rnamotifs2.path.comps_folder, comps, "pickle")
     pickle_filename = os.path.join(pickle_folder, "sequence.pickle")
-    rnamotifs2.sequence.sequence = pickle.load(open(pickle_filename))
+    rnamotifs2.sequence.sequence = pickle.load(open(pickle_filename, "rb"))
 
 def save(comps, genome, hw=15):
     if rnamotifs2.data.data_type=="apa":
@@ -99,10 +99,10 @@ def save_splice(comps, genome, hw=15):
         exon_len = in_stop - in_start + 1
         downintron_len = skip_stop - in_stop + 1
         (r1_exon, r1_intron, r1_start, r1_stop), (r2_exon, r2_intron, r2_start, r2_stop), (r3_exon, r3_intron, r3_start, r3_stop), (r4_exon, r4_intron, r4_start, r4_stop) = coords(strand, skip_start, in_start, in_stop, skip_stop)
-        seq1 = pybio.genomes.seq_direct(genome, chr.replace("chr", ""), strand, r1_start-hw, r1_stop+hw)
-        seq2 = pybio.genomes.seq_direct(genome, chr.replace("chr", ""), strand, r2_start-hw, r2_stop+hw)
-        seq3 = pybio.genomes.seq_direct(genome, chr.replace("chr", ""), strand, r3_start-hw, r3_stop+hw)
-        seq4 = pybio.genomes.seq_direct(genome, chr.replace("chr", ""), strand, r4_start-hw, r4_stop+hw)
+        seq1 = rnamotifs2.genomes.seq_direct(genome, chr.replace("chr", ""), strand, r1_start-hw, r1_stop+hw)
+        seq2 = rnamotifs2.genomes.seq_direct(genome, chr.replace("chr", ""), strand, r2_start-hw, r2_stop+hw)
+        seq3 = rnamotifs2.genomes.seq_direct(genome, chr.replace("chr", ""), strand, r3_start-hw, r3_stop+hw)
+        seq4 = rnamotifs2.genomes.seq_direct(genome, chr.replace("chr", ""), strand, r4_start-hw, r4_stop+hw)
 
         seq1_len = len(seq1)
         seq2_len = len(seq2)
@@ -149,7 +149,7 @@ def save_apa(comps, genome, hw=15):
     pickle_filename = os.path.join(pickle_folder, "sequence.pickle")
     sequence = {}
     for (eid, chr, strand, pos, event_class) in rnamotifs2.data.data:
-        seq1 = pybio.genomes.seq_direct(genome, chr.replace("chr", ""), strand, pos-rnamotifs2.data.flanking-hw, pos+rnamotifs2.data.flanking+hw)
+        seq1 = rnamotifs2.genomes.seq_direct(genome, chr.replace("chr", ""), strand, pos-rnamotifs2.data.flanking-hw, pos+rnamotifs2.data.flanking+hw)
         # mask poly-A signal
         for h in PAS_hexamers:
             if seq1.find(h)!=-1:

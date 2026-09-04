@@ -12,6 +12,42 @@ However, since several proteins can regulate pre-mRNA processing by binding simu
 
 Finally, we compute an enrichment score (ES) on the super-imposed sequences of all the features (exons, polyA sites) and draw a motif regulatory RNA-map.
 
+## Installation and running
+
+RNAmotifs2 runs on Python 3 and depends on [pybio](https://github.com/grexor/pybio)
+(genome handling), plus `numpy`, `scipy`, `matplotlib`, `fisher` and
+`pyliftover` (only for lifting example coordinates).
+
+```bash
+micromamba create -n rnamotifs2 -c conda-forge -c bioconda python=3.12 \
+    numpy scipy matplotlib pandas pysam psutil beautifulsoup4 requests pip
+micromamba run -n rnamotifs2 pip install fisher pyliftover pybio
+```
+
+A comparison lives in `comps/<name>/` and needs two files:
+
+* `<name>.tab` — tab-separated events with columns
+  `id chr strand skip_start in_start in_stop skip_stop event_class`, where
+  `event_class` is `s` (silenced), `e` (enhanced) or `c` (control)
+* `<name>.config` — `data_type=splice`, `genome=<species>.<version>`
+  (e.g. `homo_sapiens.ensembl115`), `hw=15`, `cores=<n>`
+
+Run the whole analysis (motif search, cluster growth, RNA maps) with:
+
+```bash
+./run_example.sh <name>        # defaults to paper.bh
+```
+
+Output lands in `comps/<name>/`: per-region `results*.tab` / `tree*.tab` and
+`rnamap/index.html` with the RNA maps.
+
+### Example: `comps/paper.bh`
+
+The bundled brain/heart splicing example ships in hg19 coordinates. It has
+been lifted to GRCh38 / Ensembl 115 with
+`comps/paper.bh/lift_hg19_to_ensembl115.py` (original kept as
+`paper.bh.hg19.tab`). Just run `./run_example.sh`.
+
 ## Authors
 
 [RNAmotifs2](https://github.com/grexor/rnamotifs2) is maintained by [Gregor Rot](https://grexor.github.io) in collaboration with several research laboratories worldwide.

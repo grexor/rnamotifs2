@@ -14,7 +14,6 @@ import random
 from collections import Counter
 import pickle
 import operator
-import scipy.signal
 
 cache = {}
 
@@ -34,7 +33,7 @@ def filter(v, thr):
 def choose_h(distances, debug=False, perc_from=3, perc_to=7):
     if debug:
         for r in distances:
-            print r
+            print(r)
     nd = [(dist, h) for (h, perc, dist) in distances if perc_from<=perc<=perc_to] # perc between 3 and 7 %
     nd = sorted(nd, key=operator.itemgetter(0, 1)) # search for closest to pth
     if len(nd)>0:
@@ -97,7 +96,7 @@ def v17(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={}, ste
         if step==0:
             consider_exons.add(eid)
         else:
-            basemotif_hmin = max(4, base_h/2)
+            basemotif_hmin = max(4, base_h//2)
             if len(rseq)>30:
                 # motif 0 is the new motif of the cluster (see rnamotifs2.motif.cluster)
                 rseq = coverage(rseq, len(rseq)-30, hw, [base_motif, motif[0]], strict=True)
@@ -111,7 +110,7 @@ def v17(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={}, ste
                             nums["c1"] += 1
 
     if step==0:
-        print "%s.%s.%s: looking for h closest to threshold" % (comps, genome, motif)
+        print("%s.%s.%s: looking for h closest to threshold" % (comps, genome, motif))
         distances = []
         for h in range(4, 32):
             exons_present = 0
@@ -125,13 +124,13 @@ def v17(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={}, ste
             distances.append((h, perc, abs(perc-pth)))
         choosen_h = choose_h(distances, perc_from=rnamotifs2.data.perc_from, perc_to=rnamotifs2.data.perc_to, debug=False)
         if choosen_h==None: # don't consider motif if no 3%<=pth<=7%
-            print "no h found, ignoring motif %s" % motif
+            print("no h found, ignoring motif %s" % motif)
             return None
 
     if step>0:
         thr = max(2, int(0.04 * nums["t"]))
         thr50 = 0.5 * nums["t1"]
-        print nums["t"], 0.04*nums["t"]
+        print(nums["t"], 0.04*nums["t"])
         distances = []
         for h in range(4, 32):
             exons_present = 0
@@ -152,16 +151,16 @@ def v17(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={}, ste
         else:
             return None
 
-    print "%s.%s.%s: h=%s" % (comps, genome, motif, choosen_h)
+    print("%s.%s.%s: h=%s" % (comps, genome, motif, choosen_h))
 
     fvectors = {}
     # filter vectors and compute sums
-    print "%s.%s.%s: filter" % (comps, genome, motif)
+    print("%s.%s.%s: filter" % (comps, genome, motif))
     for (eid, event_class), r in vectors.items():
         if eid in consider_exons:
             fvectors[(eid, event_class)] = filter(r, choosen_h)
 
-    print "%s.%s.%s: sum and count" % (comps, genome, motif)
+    print("%s.%s.%s: sum and count" % (comps, genome, motif))
     # sum vectors
     vectors_sum = {}
     rcounts = Counter()
@@ -231,7 +230,7 @@ def v17_new(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={},
         vectors[(eid, event_class)] = r
 
         if step>0:
-            basemotif_hmin = max(4, base_h/2)
+            basemotif_hmin = max(4, base_h//2)
             if len(rseq)>30:
                 # motif 0 is the new motif of the cluster (see rnamotifs2.motif.cluster)
                 rseq = coverage(rseq, len(rseq)-30, hw, [base_motif, motif[0]], strict=True)
@@ -244,7 +243,7 @@ def v17_new(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={},
                             nums["c1"] += 1
 
     if step==0:
-        print "%s.%s.%s: looking for h closest to threshold" % (comps, genome, motif)
+        print("%s.%s.%s: looking for h closest to threshold" % (comps, genome, motif))
         distances = []
         for h in range(4, 32):
             exons_present = 0
@@ -281,15 +280,15 @@ def v17_new(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={},
         else:
             return None
 
-    print "%s.%s.%s: h=%s" % (comps, genome, motif, choosen_h)
+    print("%s.%s.%s: h=%s" % (comps, genome, motif, choosen_h))
 
     fvectors = {}
     # filter vectors and compute sums
-    print "%s.%s.%s: filter" % (comps, genome, motif)
+    print("%s.%s.%s: filter" % (comps, genome, motif))
     for (eid, event_class), r in vectors.items():
         fvectors[(eid, event_class)] = filter(r, choosen_h)
 
-    print "%s.%s.%s: sum and count" % (comps, genome, motif)
+    print("%s.%s.%s: sum and count" % (comps, genome, motif))
     # sum vectors
     vectors_sum = {}
     rcounts = Counter()
@@ -350,7 +349,7 @@ def v17_apa(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={},
         if step==0:
             consider_exons.add(eid)
         else:
-            basemotif_hmin = max(4, base_h/2)
+            basemotif_hmin = max(4, base_h//2)
             if len(rseq)>30:
                 # motif 0 is the new motif of the cluster (see rnamotifs2.motif.cluster)
                 rseq = coverage(rseq, len(rseq)-30, hw, [base_motif, motif[0]], strict=True)
@@ -363,7 +362,7 @@ def v17_apa(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={},
                             nums["c1"] += 1
 
     if step==0:
-        print "%s.%s.%s: looking for h closest to threshold" % (comps, genome, motif)
+        print("%s.%s.%s: looking for h closest to threshold" % (comps, genome, motif))
         distances = []
         for h in range(4, 32):
             exons_present = 0
@@ -382,7 +381,7 @@ def v17_apa(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={},
     if step>0:
         thr = max(2, int(0.04 * nums["t"]))
         thr50 = 0.5 * nums["t1"]
-        print nums["t"], 0.04*nums["t"]
+        print(nums["t"], 0.04*nums["t"])
         distances = []
         for h in range(4, 32):
             exons_present = 0
@@ -403,16 +402,16 @@ def v17_apa(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={},
         else:
             return None
 
-    print "%s.%s.%s: h=%s" % (comps, genome, motif, choosen_h)
+    print("%s.%s.%s: h=%s" % (comps, genome, motif, choosen_h))
 
     fvectors = {}
     # filter vectors and compute sums
-    print "%s.%s.%s: filter" % (comps, genome, motif)
+    print("%s.%s.%s: filter" % (comps, genome, motif))
     for (eid, event_class), r in vectors.items():
         if eid in consider_exons:
             fvectors[(eid, event_class)] = filter(r, choosen_h)
 
-    print "%s.%s.%s: sum and count" % (comps, genome, motif)
+    print("%s.%s.%s: sum and count" % (comps, genome, motif))
     # sum vectors
     vectors_sum = {}
     rcounts = Counter()
@@ -471,7 +470,7 @@ def areas(comps, motif="YCAY", hw=15, h=None, pth=4):
 
     # if no h specified (motif cluster manually added for drawing), find best h
     if h==None:
-        print "%s.%s: looking for h closest to threshold" % (comps, motif)
+        print("%s.%s: looking for h closest to threshold" % (comps, motif))
         distances = []
         for h in range(4, 32):
             exons_present = 0
@@ -484,11 +483,11 @@ def areas(comps, motif="YCAY", hw=15, h=None, pth=4):
             distances.append((h, perc, abs(perc-pth)))
         h = choose_h(distances, perc_from=rnamotifs2.data.perc_from, perc_to=rnamotifs2.data.perc_to, debug=False)
 
-    print "%s.%s: h=%s" % (comps, motif, h)
+    print("%s.%s: h=%s" % (comps, motif, h))
 
     stats = Counter()
     # filter vectors and compute sums
-    print "%s.%s: filter" % (comps, motif)
+    print("%s.%s: filter" % (comps, motif))
     for (eid, event_class), (v1, v2, v3, v4) in vectors.items():
         v1 = filter(v1, h)
         v2 = filter(v2, h)
@@ -510,7 +509,7 @@ def areas(comps, motif="YCAY", hw=15, h=None, pth=4):
         temp = 1 if sum(temp)>0 else 0
         stats["r3%s" % event_class] += temp
 
-    print "%s.%s: sum and count" % (comps, motif)
+    print("%s.%s: sum and count" % (comps, motif))
     # sum vectors
     vectors_sum = {}
     for index, ((eid, event_class), (v1, v2, v3, v4)) in enumerate(vectors.items()):
@@ -535,7 +534,7 @@ def areas_apa(comps, motif="YCAY", hw=15, h=None, pth=4):
         nums[event_class] += 1
 
     if h==None:
-        print "%s.%s: looking for h closest to threshold" % (comps, motif)
+        print("%s.%s: looking for h closest to threshold" % (comps, motif))
         distances = []
         for h in range(4, 32):
             exons_present = 0
@@ -548,11 +547,11 @@ def areas_apa(comps, motif="YCAY", hw=15, h=None, pth=4):
             distances.append((h, perc, abs(perc-pth)))
         h = choose_h(distances, perc_from=rnamotifs2.data.perc_from, perc_to=rnamotifs2.data.perc_to, debug=False)
 
-    print "%s.%s: h=%s" % (comps, motif, h)
+    print("%s.%s: h=%s" % (comps, motif, h))
 
     # filter vectors and compute sums
     stats = Counter()
-    print "%s.%s: filter" % (comps, motif)
+    print("%s.%s: filter" % (comps, motif))
     for (eid, event_class), (v1) in vectors.items():
         v1 = filter(v1, h)
         vectors[(eid, event_class)] = (v1)
@@ -571,7 +570,7 @@ def areas_apa(comps, motif="YCAY", hw=15, h=None, pth=4):
         temp = 1 if sum(temp)>0 else 0
         stats["r3%s" % event_class] += temp
 
-    print "%s.%s: sum and count" % (comps, motif)
+    print("%s.%s: sum and count" % (comps, motif))
     vectors_sum = {} # sum vectors
     for index, ((eid, event_class), (v1)) in enumerate(vectors.items()):
         (v1s) = vectors_sum.get(event_class, ([0]*201))

@@ -10,7 +10,7 @@ ec_perm = {}
 ec_dist = {}
 
 def compute(comps, genome, motif):
-    print "%s.%s.%s: computing permutations" % (comps, genome, motif)
+    print("%s.%s.%s: computing permutations" % (comps, genome, motif))
     lim_s = rnamotifs2.data.data_class.count("s")
     lim_e = lim_s + rnamotifs2.data.data_class.count("e")
     lim_c = lim_e + rnamotifs2.data.data_class.count("c")
