@@ -117,11 +117,13 @@ regions = sorted(configs.keys())
 
 # ---- HTML -----------------------------------------------------------------
 
-def fmt_p(x):
+def fmt_sci(x):
+    """Scientific notation, e.g. 3.26e-05 - used for every statistical value
+    (p-values, FDR, specificity, information gain) so magnitudes are always
+    directly comparable across rows regardless of scale."""
     if x is None or x == "":
         return "&mdash;"
-    x = float(x)
-    return "%.2e" % x if x < 0.001 else "%.4f" % x
+    return "%.2e" % float(x)
 
 def fmt_num(x):
     return "&mdash;" if x in (None, "") else str(x)
@@ -171,11 +173,15 @@ h1 { font-size: 22px; margin: 0 0 2px; }
 
 .images { display: flex; gap: 10px; flex-wrap: wrap; }
 .images figure { margin: 0; }
-.images img { width: 250px; display: block; border-radius: 6px; border: 1px solid var(--line);
+.images img { width: 250px; display: block; border-radius: 6px; border: 3px solid var(--line);
               cursor: zoom-in; transition: opacity .1s; }
 .images img:hover { opacity: .85; }
 .images figcaption { font-size: 10.5px; color: var(--sub); text-align: center; margin-top: 4px; }
 .images a { text-decoration: none; }
+/* regulation direction, at a glance: blue=silenced/repressed, red=enhanced -
+   same convention as the highlight border drawn inside the plots themselves */
+.thumb-s, .lightbox img.thumb-s { border-color: var(--blue); }
+.thumb-e, .lightbox img.thumb-e { border-color: var(--red); }
 
 /* lightbox: click a thumbnail to open, wheel to zoom, drag to pan once zoomed,
    double-click/Escape/backdrop click to reset/close - no external libraries */
@@ -186,6 +192,7 @@ h1 { font-size: 22px; margin: 0 0 2px; }
                  background: #fff; /* the plots are saved as transparent PNGs (matplotlib
                     savefig transparent=True) - fine on the page's white background, but
                     the lightbox's dark backdrop would otherwise show through them */
+                 border: 3px solid transparent;
                  box-shadow: 0 12px 48px rgba(0,0,0,.5); cursor: zoom-in;
                  transition: transform .08s ease-out; user-select: none; -webkit-user-drag: none; }
 .lightbox img.zoomed { cursor: grab; }
@@ -232,14 +239,14 @@ for region in regions:
         n_steps = info.get("n_steps", "?")
 
         stat_cells = []
-        stat_cells.append(("FDR q-value" if use_fdr else "p-value (Fisher)", fmt_p(fisher)))
-        stat_cells.append(("perm. p-value (n=%d)" % perms if perms > 0 else "perm. p-value", fmt_p(p_emp) if perms > 0 else "&mdash;"))
+        stat_cells.append(("FDR q-value" if use_fdr else "p-value (Fisher)", fmt_sci(fisher)))
+        stat_cells.append(("perm. p-value (n=%d)" % perms if perms > 0 else "perm. p-value", fmt_sci(p_emp) if perms > 0 else "&mdash;"))
         stat_cells.append(("motifs in cluster", fmt_num(n_steps)))
         stat_cells.append(("h (window height)", fmt_num(h)))
-        stat_cells.append(("specificity", fmt_num(info.get("specificity"))))
+        stat_cells.append(("specificity", fmt_sci(info.get("specificity"))))
         stat_cells.append(("found (%s)" % direction, fmt_num(info.get("found.t"))))
         stat_cells.append(("found (control)", fmt_num(info.get("found.c"))))
-        stat_cells.append(("information gain", fmt_num(info.get("ig"))))
+        stat_cells.append(("information gain", fmt_sci(info.get("ig"))))
 
         stat_html = "".join("<div><span class='label'>%s</span><span class='value'>%s</span></div>" % (html.escape(lbl), val)
                             for lbl, val in stat_cells)
@@ -249,9 +256,10 @@ for region in regions:
         for a in range(0, 4):
             image_filename = "%s_tree%s_area%s.png?nocache=%s" % (region, index, a+1, nocache)
             img_html.append(
-                "<figure><a href=%s onclick=\"return openLightbox(event, this.href)\"><img src=%s></a>"
+                "<figure><a href=%s onclick=\"return openLightbox(event, this.href, '%s')\">"
+                "<img class='thumb-%s' src=%s></a>"
                 "<figcaption>area %d (0=%s)</figcaption></figure>" % (
-                    image_filename, image_filename, a+1, area_captions[a]))
+                    image_filename, badge_class, badge_class, image_filename, a+1, area_captions[a]))
 
         rows_html.append("""
 <div class='card'>
@@ -291,9 +299,10 @@ LIGHTBOX = """
   }
   function reset() { scale = 1; panX = 0; panY = 0; apply(); }
 
-  window.openLightbox = function (ev, src) {
+  window.openLightbox = function (ev, src, dir) {
     ev.preventDefault();
     img.src = src;
+    img.className = dir ? 'thumb-' + dir : '';
     reset();
     box.classList.add('open');
     return false;
