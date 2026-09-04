@@ -58,6 +58,27 @@ def read_config(comps):
     if getattr(m, "cores", None)==None:
         setattr(m, "cores", 20)
 
+    # beam_width=1 (default) is plain greedy cluster growth (next_cluster);
+    # beam_width>1 grows that many independent chains, one per each of the
+    # top beam_width base motifs, and keeps whichever ends up best
+    # (cluster.next_cluster_beam) - see README.
+    if getattr(m, "beam_width", None)==None:
+        setattr(m, "beam_width", 1)
+
+    # beam_recursive=False (default): next_cluster_beam only diversifies the
+    # starting (step 0) motif, then grows each chain greedily on its own.
+    # beam_recursive=True (needs beam_width>1): next_cluster_beam_recursive
+    # globally re-ranks every active beam's candidates at every step too.
+    if getattr(m, "beam_recursive", None)==None:
+        setattr(m, "beam_recursive", False)
+
+    # a "perms=<n>" line in the .config file is parsed onto this (data)
+    # module above, but rnamotifs2.perm / rnamotifs2.compute / assemble_results
+    # all read rnamotifs2.config.perms - keep the two in sync so the config
+    # file setting actually takes effect.
+    if getattr(m, "perms", None) is not None:
+        rnamotifs2.config.perms = m.perms
+
 def read(comps):
     read_config(comps)
     if data_type=="apa":

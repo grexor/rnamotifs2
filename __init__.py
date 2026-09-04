@@ -8,6 +8,7 @@ import pybio
 from . import genomes
 from . import data
 from . import search
+from . import fastsearch
 from . import compute
 from . import draw
 from . import path
@@ -16,8 +17,8 @@ from . import perm
 from . import sequence
 from . import cluster
 from . import results
-from queue import Queue
-from threading import Thread
+from . import motifjob
+from . import pool
 import random
 import operator
 import pickle
@@ -59,31 +60,18 @@ def start_cluster(comps, genome, region, cn, pth, sf):
     comps_filename = os.path.join(comps_folder, "%s.tab" % comps)
     pickle_folder = os.path.join(region_folder, "pickle")
 
-    # read data
+    # read data + genomic sequences once; pool workers inherit them via fork
     rnamotifs2.data.read(comps)
+    rnamotifs2.sequence.load(comps)
+    rnamotifs2.perm.compute(comps, genome, ["_base_"])
     motifs = rnamotifs2.results.get_motifs(comps, region)
 
-    num_worker_threads = rnamotifs2.data.cores
-    q = Queue()
-    def worker():
-        while True:
-            task = q.get()
-            os.system(task)
-            q.task_done()
     tasks = []
     for motif in motifs:
         pickle_file = os.path.join(pickle_folder, "c%s.%s.pickle" % (cn, "_".join(sorted(motif.split("_")))))
         if not os.path.exists(pickle_file):
-            command = "rnamotifs2.motif %s %s %s %s %s %s %s" % (comps, genome, region, "_".join(motif.split("_")), pth, cn, sf)
-            print("COMMAND=%s" % command)
-            tasks.append(command)
-    for i in range(num_worker_threads):
-         t = Thread(target=worker)
-         t.daemon = True
-         t.start()
-    for task in tasks:
-        q.put(task)
-    q.join()
+            tasks.append(("motif", comps, genome, region, "_".join(motif.split("_")), pth, cn, sf))
+    rnamotifs2.pool.run(tasks, rnamotifs2.data.cores)
 
     base_motif_fisher = assemble_results(comps, genome, region, cn)
     if base_motif_fisher<=rnamotifs2.data.base_motif_thr:
@@ -91,7 +79,15 @@ def start_cluster(comps, genome, region, cn, pth, sf):
     return base_motif_fisher
 
 def continue_cluster(comps, genome, region, cn, pth, sf):
-    rnamotifs2.cluster.next_cluster(comps, genome, region, cn, pth=pth, sf=sf)
+    beam_width = getattr(rnamotifs2.data, "beam_width", 1)
+    if beam_width > 1 and getattr(rnamotifs2.data, "beam_recursive", False):
+        rnamotifs2.cluster.next_cluster_beam_recursive(comps, genome, region, cn, pth=pth, sf=sf,
+                                                        beam_width=beam_width)
+    elif beam_width > 1:
+        rnamotifs2.cluster.next_cluster_beam(comps, genome, region, cn, pth=pth, sf=sf,
+                                             beam_width=beam_width)
+    else:
+        rnamotifs2.cluster.next_cluster(comps, genome, region, cn, pth=pth, sf=sf)
     # try to start new cluster, if base_motif will have fisher < thr, it will stop processing
     start_cluster(comps, genome, region, cn+1, pth, sf)
 

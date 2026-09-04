@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RNAmotifs2: paper.bh.strict.beam.fullrecursive</title>
+<style>
+:root {
+    --ink: #1b2430; --sub: #5b6b7c; --line: #e3e8ee; --bg: #f6f8fa; --card: #ffffff;
+    --blue: #2f6fed; --red: #e6494f; --accent: #f7f9fb;
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 32px 40px 64px; background: var(--bg);
+       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+       color: var(--ink); }
+h1 { font-size: 22px; margin: 0 0 2px; }
+.sub { color: var(--sub); font-size: 13px; margin-bottom: 24px; }
+.mono { font-family: "SF Mono", Menlo, Consolas, monospace; }
+
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+         padding: 20px 24px; margin-bottom: 28px; box-shadow: 0 1px 2px rgba(20,30,40,.04); }
+.panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em;
+            color: var(--sub); margin: 0 0 16px; }
+.settings-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                      gap: 20px 28px; }
+.settings-section h3 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em;
+                        color: var(--blue); margin: 0 0 10px; padding-bottom: 6px;
+                        border-bottom: 1px solid var(--line); }
+.settings-section dl { display: grid; grid-template-columns: auto minmax(0, 1fr);
+                        gap: 8px 14px; margin: 0; }
+.settings-section dt { color: var(--sub); font-size: 12.5px; align-self: center; }
+.settings-section dd { margin: 0; font-weight: 600; font-size: 13px; text-align: right;
+                        overflow-wrap: anywhere; min-width: 0; }
+
+.region-heading { font-size: 15px; font-weight: 700; margin: 30px 0 12px; color: var(--ink); }
+.region-heading .badge { display: inline-block; font-size: 11px; font-weight: 700; color: #fff;
+                          border-radius: 4px; padding: 2px 7px; margin-left: 8px; vertical-align: 2px; }
+.badge.s { background: var(--blue); }
+.badge.e { background: var(--red); }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+        padding: 16px 20px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(20,30,40,.04); }
+.card-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+            gap: 8px 20px; margin-bottom: 10px; }
+.card-title { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.cluster-name { font-size: 17px; font-weight: 700; }
+.tree-link { font-size: 12px; color: var(--sub); white-space: nowrap; }
+.tree-link a { color: var(--blue); }
+
+.region-dots { display: flex; gap: 12px; }
+.region-dots .rd { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.region-dots .dot { width: 13px; height: 13px; border-radius: 50%; background: #fff;
+                     border: 2px solid #ccd3da; }
+.region-dots .dot.on-s { background: var(--blue); border-color: var(--blue); }
+.region-dots .dot.on-e { background: var(--red); border-color: var(--red); }
+.region-dots .rd-label { font-size: 9.5px; color: var(--sub); letter-spacing: .02em; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+             gap: 10px 18px; margin: 12px 0 16px; padding: 12px 14px; background: var(--accent);
+             border-radius: 8px; font-size: 12.5px; }
+.stat-grid .label { color: var(--sub); display: block; font-size: 10.5px;
+                     text-transform: uppercase; letter-spacing: .03em; }
+.stat-grid .value { font-weight: 700; font-size: 14px; }
+
+.images { display: flex; gap: 10px; flex-wrap: wrap; }
+.images figure { margin: 0; position: relative; }
+.images img { width: 250px; display: block; border-radius: 6px; border: 3px solid var(--line);
+              cursor: zoom-in; transition: opacity .1s; }
+.images img:hover { opacity: .85; }
+.images figcaption { font-size: 10.5px; color: var(--sub); text-align: center; margin-top: 4px; }
+.images a { text-decoration: none; }
+/* regulation direction, at a glance: blue=silenced/repressed, red=enhanced -
+   same convention as the highlight border drawn inside the plots themselves */
+.thumb-s { border-color: var(--blue); }
+.thumb-e { border-color: var(--red); }
+/* one of these per area plot, only on the area(s) that actually carry the
+   highlighted window inside the plot (see area_is_regulated()) */
+.area-dot { position: absolute; top: 8px; right: 8px; width: 13px; height: 13px;
+            border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(20,30,40,.2); }
+.area-dot.on-s { background: var(--blue); }
+.area-dot.on-e { background: var(--red); }
+
+/* lightbox: click a thumbnail to open, wheel to zoom, drag to pan once zoomed,
+   double-click/Escape/backdrop click to reset/close - no external libraries */
+.lightbox { display: none; position: fixed; inset: 0; background: rgba(10,14,20,.9);
+            z-index: 1000; align-items: center; justify-content: center; overflow: hidden; }
+.lightbox.open { display: flex; }
+.lightbox img { max-width: 92vw; max-height: 92vh; border-radius: 4px;
+                 background: #fff; /* the plots are saved as transparent PNGs (matplotlib
+                    savefig transparent=True) - fine on the page's white background, but
+                    the lightbox's dark backdrop would otherwise show through them */
+                 box-shadow: 0 12px 48px rgba(0,0,0,.5); cursor: zoom-in;
+                 transition: transform .08s ease-out; user-select: none; -webkit-user-drag: none; }
+.lightbox img.zoomed { cursor: grab; }
+.lightbox img.dragging { cursor: grabbing; transition: none; }
+.lightbox .hint { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+                   color: rgba(255,255,255,.55); font-size: 11.5px; letter-spacing: .02em; }
+.lightbox .close { position: fixed; top: 16px; right: 22px; width: 36px; height: 36px;
+                     border-radius: 50%; background: rgba(255,255,255,.12); color: #fff;
+                     font-size: 20px; line-height: 36px; text-align: center; cursor: pointer; }
+.lightbox .close:hover { background: rgba(255,255,255,.22); }
+</style>
+</head>
+<body>
+<h1>RNAmotifs2 &mdash; paper.bh.strict.beam.fullrecursive</h1>
+<div class='sub'>generated 04.09.2026 20:47:51</div>
+<div class='panel'><h2>Run settings</h2><div class='settings-sections'>
+<div class='settings-section'><h3>Input</h3><dl>
+<dt>comparison</dt><dd class='mono'>paper.bh.strict.beam.fullrecursive</dd>
+<dt>data file</dt><dd class='mono'>paper.bh.strict.beam.fullrecursive.tab</dd>
+<dt>config file</dt><dd class='mono'>paper.bh.strict.beam.fullrecursive.config</dd>
+<dt>genome</dt><dd class='mono'>homo_sapiens.ensembl115</dd>
+<dt>data type</dt><dd class='mono'>splice</dd>
+</dl></div>
+<div class='settings-section'><h3>Events</h3><dl>
+<dt>silenced / repressed</dt><dd class='mono'>1356</dd>
+<dt>enhanced</dt><dd class='mono'>1543</dd>
+<dt>control</dt><dd class='mono'>4667</dd>
+<dt>half-window (hw)</dt><dd class='mono'>15</dd>
+</dl></div>
+<div class='settings-section'><h3>Search strategy</h3><dl>
+<dt>motif search</dt><dd class='mono'>recursive beam search (beam_width=5)</dd>
+<dt>base motif threshold</dt><dd class='mono'>0.01</dd>
+<dt>cluster stop threshold</dt><dd class='mono'>0.001</dd>
+</dl></div>
+<div class='settings-section'><h3>Statistics</h3><dl>
+<dt>permutations</dt><dd class='mono'>1000</dd>
+<dt>multiple-testing correction</dt><dd class='mono'>Benjamini-Hochberg FDR</dd>
+</dl></div>
+<div class='settings-section'><h3>Compute</h3><dl>
+<dt>cores</dt><dd class='mono'>6</dd>
+</dl></div>
+</div></div>
+<div class='region-heading'>R1 (upstream) <span class='badge e'>ENHANCED</span></div>
+
+<div class='card'>
+  <div class='card-top'>
+    <div class='card-title'>
+      <div class='cluster-name mono'>CTGT+TCT+CTT</div>
+      <div class='region-dots'><div class='rd'><span class='dot on-e'></span><span class='rd-label'>R1</span></div><div class='rd'><span class='dot '></span><span class='rd-label'>R2</span></div><div class='rd'><span class='dot '></span><span class='rd-label'>R3</span></div></div>
+    </div>
+    <div class='tree-link'><a href=https://expressrna.org/rnamotifs2/paper.bh.strict.beam.fullrecursive/r1e/tree0.tab target=_new>tree0.tab</a> on expressRNA</div>
+  </div>
+  <div class='stat-grid'><div><span class='label'>FDR q-value</span><span class='value'>1.18e-07</span></div><div><span class='label'>perm. p-value (n=1000)</span><span class='value'>9.99e-04</span></div><div><span class='label'>motifs in cluster</span><span class='value'>3</span></div><div><span class='label'>h (window height)</span><span class='value'>18</span></div><div><span class='label'>specificity</span><span class='value'>3.02e+00</span></div><div><span class='label'>found (enhanced)</span><span class='value'>66</span></div><div><span class='label'>found (control)</span><span class='value'>66</span></div><div><span class='label'>information gain</span><span class='value'>5.04e-03</span></div></div>
+  <div class='images'><figure><a href=r1e_tree0_area1.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-e' src=r1e_tree0_area1.png?nocache=1788547664.0></a><figcaption>area 1 (0=skip.start)</figcaption></figure><figure><a href=r1e_tree0_area2.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-e' src=r1e_tree0_area2.png?nocache=1788547664.0></a><span class='area-dot on-e'></span><figcaption>area 2 (0=in.start)</figcaption></figure><figure><a href=r1e_tree0_area3.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-e' src=r1e_tree0_area3.png?nocache=1788547664.0></a><figcaption>area 3 (0=in.stop)</figcaption></figure><figure><a href=r1e_tree0_area4.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-e' src=r1e_tree0_area4.png?nocache=1788547664.0></a><figcaption>area 4 (0=skip.stop)</figcaption></figure></div>
+</div>
+<div class='region-heading'>R1 (upstream) <span class='badge s'>SILENCED</span></div>
+
+<div class='card'>
+  <div class='card-top'>
+    <div class='card-title'>
+      <div class='cluster-name mono'>TGTG+TCAT</div>
+      <div class='region-dots'><div class='rd'><span class='dot on-s'></span><span class='rd-label'>R1</span></div><div class='rd'><span class='dot '></span><span class='rd-label'>R2</span></div><div class='rd'><span class='dot '></span><span class='rd-label'>R3</span></div></div>
+    </div>
+    <div class='tree-link'><a href=https://expressrna.org/rnamotifs2/paper.bh.strict.beam.fullrecursive/r1s/tree0.tab target=_new>tree0.tab</a> on expressRNA</div>
+  </div>
+  <div class='stat-grid'><div><span class='label'>FDR q-value</span><span class='value'>1.57e-05</span></div><div><span class='label'>perm. p-value (n=1000)</span><span class='value'>9.99e-04</span></div><div><span class='label'>motifs in cluster</span><span class='value'>2</span></div><div><span class='label'>h (window height)</span><span class='value'>9</span></div><div><span class='label'>specificity</span><span class='value'>3.23e+00</span></div><div><span class='label'>found (silenced)</span><span class='value'>45</span></div><div><span class='label'>found (control)</span><span class='value'>48</span></div><div><span class='label'>information gain</span><span class='value'>3.65e-03</span></div></div>
+  <div class='images'><figure><a href=r1s_tree0_area1.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-s' src=r1s_tree0_area1.png?nocache=1788547664.0></a><figcaption>area 1 (0=skip.start)</figcaption></figure><figure><a href=r1s_tree0_area2.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-s' src=r1s_tree0_area2.png?nocache=1788547664.0></a><span class='area-dot on-s'></span><figcaption>area 2 (0=in.start)</figcaption></figure><figure><a href=r1s_tree0_area3.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-s' src=r1s_tree0_area3.png?nocache=1788547664.0></a><figcaption>area 3 (0=in.stop)</figcaption></figure><figure><a href=r1s_tree0_area4.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-s' src=r1s_tree0_area4.png?nocache=1788547664.0></a><figcaption>area 4 (0=skip.stop)</figcaption></figure></div>
+</div>
+<div class='region-heading'>R2 (splice site) <span class='badge s'>SILENCED</span></div>
+
+<div class='card'>
+  <div class='card-top'>
+    <div class='card-title'>
+      <div class='cluster-name mono'>TCAT</div>
+      <div class='region-dots'><div class='rd'><span class='dot '></span><span class='rd-label'>R1</span></div><div class='rd'><span class='dot on-s'></span><span class='rd-label'>R2</span></div><div class='rd'><span class='dot '></span><span class='rd-label'>R3</span></div></div>
+    </div>
+    <div class='tree-link'><a href=https://expressrna.org/rnamotifs2/paper.bh.strict.beam.fullrecursive/r2s/tree0.tab target=_new>tree0.tab</a> on expressRNA</div>
+  </div>
+  <div class='stat-grid'><div><span class='label'>FDR q-value</span><span class='value'>4.56e-02</span></div><div><span class='label'>perm. p-value (n=1000)</span><span class='value'>2.00e-03</span></div><div><span class='label'>motifs in cluster</span><span class='value'>1</span></div><div><span class='label'>h (window height)</span><span class='value'>5</span></div><div><span class='label'>specificity</span><span class='value'>&mdash;</span></div><div><span class='label'>found (silenced)</span><span class='value'>&mdash;</span></div><div><span class='label'>found (control)</span><span class='value'>&mdash;</span></div><div><span class='label'>information gain</span><span class='value'>1.43e-03</span></div></div>
+  <div class='images'><figure><a href=r2s_tree0_area1.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-s' src=r2s_tree0_area1.png?nocache=1788547664.0></a><figcaption>area 1 (0=skip.start)</figcaption></figure><figure><a href=r2s_tree0_area2.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-s' src=r2s_tree0_area2.png?nocache=1788547664.0></a><span class='area-dot on-s'></span><figcaption>area 2 (0=in.start)</figcaption></figure><figure><a href=r2s_tree0_area3.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-s' src=r2s_tree0_area3.png?nocache=1788547664.0></a><span class='area-dot on-s'></span><figcaption>area 3 (0=in.stop)</figcaption></figure><figure><a href=r2s_tree0_area4.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-s' src=r2s_tree0_area4.png?nocache=1788547664.0></a><figcaption>area 4 (0=skip.stop)</figcaption></figure></div>
+</div>
+<div class='region-heading'>R3 (downstream) <span class='badge e'>ENHANCED</span></div>
+
+<div class='card'>
+  <div class='card-top'>
+    <div class='card-title'>
+      <div class='cluster-name mono'>CATT+TGTG+CATC+CAT</div>
+      <div class='region-dots'><div class='rd'><span class='dot '></span><span class='rd-label'>R1</span></div><div class='rd'><span class='dot '></span><span class='rd-label'>R2</span></div><div class='rd'><span class='dot on-e'></span><span class='rd-label'>R3</span></div></div>
+    </div>
+    <div class='tree-link'><a href=https://expressrna.org/rnamotifs2/paper.bh.strict.beam.fullrecursive/r3e/tree0.tab target=_new>tree0.tab</a> on expressRNA</div>
+  </div>
+  <div class='stat-grid'><div><span class='label'>FDR q-value</span><span class='value'>4.45e-06</span></div><div><span class='label'>perm. p-value (n=1000)</span><span class='value'>9.99e-04</span></div><div><span class='label'>motifs in cluster</span><span class='value'>4</span></div><div><span class='label'>h (window height)</span><span class='value'>11</span></div><div><span class='label'>specificity</span><span class='value'>2.73e+00</span></div><div><span class='label'>found (enhanced)</span><span class='value'>64</span></div><div><span class='label'>found (control)</span><span class='value'>71</span></div><div><span class='label'>information gain</span><span class='value'>3.92e-03</span></div></div>
+  <div class='images'><figure><a href=r3e_tree0_area1.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-e' src=r3e_tree0_area1.png?nocache=1788547664.0></a><figcaption>area 1 (0=skip.start)</figcaption></figure><figure><a href=r3e_tree0_area2.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-e' src=r3e_tree0_area2.png?nocache=1788547664.0></a><figcaption>area 2 (0=in.start)</figcaption></figure><figure><a href=r3e_tree0_area3.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-e' src=r3e_tree0_area3.png?nocache=1788547664.0></a><span class='area-dot on-e'></span><figcaption>area 3 (0=in.stop)</figcaption></figure><figure><a href=r3e_tree0_area4.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-e' src=r3e_tree0_area4.png?nocache=1788547664.0></a><figcaption>area 4 (0=skip.stop)</figcaption></figure></div>
+</div>
+<div class='region-heading'>R3 (downstream) <span class='badge s'>SILENCED</span></div>
+
+<div class='card'>
+  <div class='card-top'>
+    <div class='card-title'>
+      <div class='cluster-name mono'>CTGC</div>
+      <div class='region-dots'><div class='rd'><span class='dot '></span><span class='rd-label'>R1</span></div><div class='rd'><span class='dot '></span><span class='rd-label'>R2</span></div><div class='rd'><span class='dot on-s'></span><span class='rd-label'>R3</span></div></div>
+    </div>
+    <div class='tree-link'><a href=https://expressrna.org/rnamotifs2/paper.bh.strict.beam.fullrecursive/r3s/tree0.tab target=_new>tree0.tab</a> on expressRNA</div>
+  </div>
+  <div class='stat-grid'><div><span class='label'>FDR q-value</span><span class='value'>1.18e-02</span></div><div><span class='label'>perm. p-value (n=1000)</span><span class='value'>9.99e-04</span></div><div><span class='label'>motifs in cluster</span><span class='value'>1</span></div><div><span class='label'>h (window height)</span><span class='value'>8</span></div><div><span class='label'>specificity</span><span class='value'>&mdash;</span></div><div><span class='label'>found (silenced)</span><span class='value'>&mdash;</span></div><div><span class='label'>found (control)</span><span class='value'>&mdash;</span></div><div><span class='label'>information gain</span><span class='value'>1.63e-03</span></div></div>
+  <div class='images'><figure><a href=r3s_tree0_area1.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-s' src=r3s_tree0_area1.png?nocache=1788547664.0></a><figcaption>area 1 (0=skip.start)</figcaption></figure><figure><a href=r3s_tree0_area2.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-s' src=r3s_tree0_area2.png?nocache=1788547664.0></a><figcaption>area 2 (0=in.start)</figcaption></figure><figure><a href=r3s_tree0_area3.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-s' src=r3s_tree0_area3.png?nocache=1788547664.0></a><span class='area-dot on-s'></span><figcaption>area 3 (0=in.stop)</figcaption></figure><figure><a href=r3s_tree0_area4.png?nocache=1788547664.0 onclick="return openLightbox(event, this.href)"><img class='thumb-s' src=r3s_tree0_area4.png?nocache=1788547664.0></a><figcaption>area 4 (0=skip.stop)</figcaption></figure></div>
+</div>
+
+<div id="lightbox" class="lightbox" onclick="lbBackdrop(event)">
+  <div class="close" onclick="lbClose(event)">&times;</div>
+  <img id="lightbox-img">
+  <div class="hint">scroll to zoom &middot; drag to pan &middot; double-click or Esc to reset/close</div>
+</div>
+<script>
+(function () {
+  var box = document.getElementById('lightbox');
+  var img = document.getElementById('lightbox-img');
+  var scale = 1, panX = 0, panY = 0;
+  var dragging = false, moved = false, startX = 0, startY = 0, offX = 0, offY = 0;
+
+  function apply() {
+    img.style.transform = 'translate(' + panX + 'px,' + panY + 'px) scale(' + scale + ')';
+    img.classList.toggle('zoomed', scale > 1);
+  }
+  function reset() { scale = 1; panX = 0; panY = 0; apply(); }
+
+  window.openLightbox = function (ev, src) {
+    ev.preventDefault();
+    img.src = src;
+    reset();
+    box.classList.add('open');
+    return false;
+  };
+  window.lbClose = function (ev) { ev.stopPropagation(); box.classList.remove('open'); };
+  window.lbBackdrop = function (ev) { if (ev.target === box) box.classList.remove('open'); };
+
+  img.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    scale = Math.min(6, Math.max(1, scale * (e.deltaY < 0 ? 1.15 : 1 / 1.15)));
+    if (scale === 1) { panX = 0; panY = 0; }
+    apply();
+  }, { passive: false });
+
+  img.addEventListener('dblclick', reset);
+
+  img.addEventListener('mousedown', function (e) {
+    dragging = true; moved = false;
+    startX = e.clientX; startY = e.clientY; offX = panX; offY = panY;
+    img.classList.add('dragging');
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', function (e) {
+    if (!dragging) return;
+    var dx = e.clientX - startX, dy = e.clientY - startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+    if (scale > 1) { panX = offX + dx; panY = offY + dy; apply(); }
+  });
+  window.addEventListener('mouseup', function () {
+    if (dragging && !moved) { // plain click, no drag: toggle zoom in/out
+      if (scale > 1) { scale = 1; panX = 0; panY = 0; } else { scale = 2.5; }
+      apply();
+    }
+    dragging = false;
+    img.classList.remove('dragging');
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (scale > 1) reset(); else box.classList.remove('open');
+  });
+})();
+</script>
+
+</body>
+</html>
