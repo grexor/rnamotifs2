@@ -5,6 +5,13 @@ import math
 import numpy as np
 import pybio
 
+def highlight_region(mpatches, ax, x0, width, edgecolor, height=200):
+    """Yellow fill for the analyzed window, with a colored border showing
+    which event class (blue=silenced, red=enhanced) it was detected in."""
+    ax.add_patch(mpatches.Rectangle([x0, 0], width, height, color="#FFFF00", alpha=0.1))
+    ax.add_patch(mpatches.Rectangle([x0, 0], width, height, facecolor='none',
+                                    edgecolor=edgecolor, linewidth=2.5))
+
 def read_tree(filename):
     motif = []
     rows = []
@@ -76,18 +83,16 @@ def area(motif, s, e, filename, area=None, region=None, limy=None, stats=None):
         p = mpatches.Rectangle([0, 0], 50, 200, color=(0,0,0), alpha=0.1)
         plt.gca().add_patch(p)
         plt.xticks([0,25,50,75,100,125,150,175,200,225,250], [-50, -25, "skip.start", 25, 50, 75, 100, 125, 150, 175, 200])
-    # the analyzed window is highlighted in the color of the event class it
-    # was detected in: blue for silenced (region ends in "s"), red for
-    # enhanced (region ends in "e")
+    # the analyzed window is highlighted in yellow, with a border in the color
+    # of the event class it was detected in: blue for silenced (region ends
+    # in "s"), red for enhanced (region ends in "e")
     highlight = "blue" if region[-1]=="s" else "red"
 
     if area==1:
         if region.startswith("r1"):
-            p = mpatches.Rectangle([155, 0], 40, 200, facecolor=highlight, edgecolor=highlight, alpha=0.3, linewidth=2)
-            plt.gca().add_patch(p)
+            highlight_region(mpatches, plt.gca(), 155, 40, highlight)
         if region.startswith("r2"):
-            p = mpatches.Rectangle([200, 0], 30, 200, facecolor=highlight, edgecolor=highlight, alpha=0.3, linewidth=2)
-            plt.gca().add_patch(p)
+            highlight_region(mpatches, plt.gca(), 200, 30, highlight)
         p = mpatches.Rectangle([200, 0], 0.01, 200, facecolor='none', edgecolor=(0.7, 0.7, 0.7))
         plt.gca().add_patch(p)
         p = mpatches.Rectangle([200, 0], 50, 200, color=(0,0,0), alpha=0.1)
@@ -95,11 +100,9 @@ def area(motif, s, e, filename, area=None, region=None, limy=None, stats=None):
         plt.xticks([0,25,50,75,100,125,150,175,200,225,250], [-200, -175, -150, -125, -100, -75, -50, -25, "in.start", 25, 50])
     if area==2:
         if region.startswith("r2"):
-            p = mpatches.Rectangle([20, 0], 30, 200, facecolor=highlight, edgecolor=highlight, alpha=0.3, linewidth=2)
-            plt.gca().add_patch(p)
+            highlight_region(mpatches, plt.gca(), 20, 30, highlight)
         if region.startswith("r3"):
-            p = mpatches.Rectangle([55, 0], 40, 200, facecolor=highlight, edgecolor=highlight, alpha=0.3, linewidth=2)
-            plt.gca().add_patch(p)
+            highlight_region(mpatches, plt.gca(), 55, 40, highlight)
         p = mpatches.Rectangle([50, 0], 0.01, 200, facecolor='none', edgecolor=(0.7, 0.7, 0.7))
         plt.gca().add_patch(p)
         p = mpatches.Rectangle([0, 0], 50, 200, color=(0,0,0), alpha=0.1)
@@ -174,25 +177,22 @@ def area_apa(motif, s, e, filename, area=None, region=None, limy=None, fisher=No
     plt.gca().add_patch(p)
     plt.xticks([0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200], [-100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100])
 
-    # the analyzed window is highlighted in the color of the event class it
-    # was detected in: blue for silenced (region ends in "s"), red for
-    # enhanced (region ends in "e")
+    # the analyzed window is highlighted in yellow, with a border in the color
+    # of the event class it was detected in: blue for silenced (region ends
+    # in "s"), red for enhanced (region ends in "e")
     highlight = "blue" if region[-1]=="s" else "red"
 
     if region.startswith("r1"):
         plt.text(20, limy-2, "R1 [-100, -40]", fontsize=25)
-        p = mpatches.Rectangle([0, 0], 60, 200, facecolor=highlight, edgecolor=highlight, alpha=0.3, linewidth=2)
-        plt.gca().add_patch(p)
+        highlight_region(mpatches, plt.gca(), 0, 60, highlight)
 
     if region.startswith("r2"):
         plt.text(80, limy-2, "R2 [-40, 20]", fontsize=25)
-        p = mpatches.Rectangle([60, 0], 60, 200, facecolor=highlight, edgecolor=highlight, alpha=0.3, linewidth=2)
-        plt.gca().add_patch(p)
+        highlight_region(mpatches, plt.gca(), 60, 60, highlight)
 
     if region.startswith("r3"):
         plt.text(140, limy-2, "R3 [20, 80]", fontsize=25)
-        p = mpatches.Rectangle([120, 0], 60, 200, facecolor=highlight, edgecolor=highlight, alpha=0.3, linewidth=2)
-        plt.gca().add_patch(p)
+        highlight_region(mpatches, plt.gca(), 120, 60, highlight)
 
     if fisher!=None:
         plt.title("%s, p-value = %.2e" % (motif, fisher), y=1.06)
