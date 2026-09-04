@@ -57,6 +57,8 @@ did nothing):
 * click any plot for an in-page **zoom/pan lightbox** (wheel to zoom, drag to
   pan, double-click/Escape to reset) — plain JS, nothing external or bundled
 
+![RNAmotifs2 report example](media/example.jpg)
+
 See `comps/paper.bh.strict.beam.fullrecursive/rnamap/index.html` (checked
 into the repo — open it directly, no need to run anything) for what it looks
 like end to end.
