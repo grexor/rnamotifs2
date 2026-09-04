@@ -39,12 +39,27 @@ Run the whole analysis (motif search, cluster growth, RNA maps) with:
 ```
 
 Output lands in `comps/<name>/`: per-region `results*.tab` / `tree*.tab` and
-`rnamap/index.html` with the RNA maps. The report opens standalone (no
-external JS/CSS — the old jquery/highslide paths only ever resolved when
-deployed under expressRNA's own asset layout) and, per region, shows the
-FDR/p-value, permutation p-value, cluster size, specificity, and support
-counts alongside the plots, plus a settings panel with the run's data file,
-genome, thresholds, permutation count and search mode.
+`rnamap/index.html` with the RNA maps. The report is fully self-contained
+(no external JS/CSS — the old jquery/highslide paths only ever resolved when
+deployed under expressRNA's own asset layout, so standalone they silently
+did nothing):
+
+* a **run settings** panel (grouped into Input / Events / Search strategy /
+  Statistics / Compute) — data file, genome, permutation count, FDR on/off,
+  search mode, both cluster-growth thresholds
+* per motif cluster, a **stat card**: FDR q-value or raw p-value (labeled
+  correctly either way), permutation p-value, cluster size, `h`, specificity
+  and information gain (all in scientific notation), support counts
+* **R1/R2/R3 dots** beside the cluster name marking which of the three areas
+  along the splice junction it was found in, and a small **dot on the
+  specific area plot(s)** that actually carry the highlighted (regulated)
+  window — both blue for silenced/repressed, red for enhanced
+* click any plot for an in-page **zoom/pan lightbox** (wheel to zoom, drag to
+  pan, double-click/Escape to reset) — plain JS, nothing external or bundled
+
+See `comps/paper.bh.strict.beam.fullrecursive/rnamap/index.html` (checked
+into the repo — open it directly, no need to run anything) for what it looks
+like end to end.
 
 The motif search is vectorised (`rnamotifs2.fastsearch`) and runs in a
 multiprocessing pool. Set `RNAMOTIFS2_REFERENCE=1` to fall back to the original
@@ -164,6 +179,12 @@ step (~1,575 tests) rather than one chain's ~315, a correspondingly stricter
 bar. The archive mechanism catches exactly this: growing further isn't always
 better, and only tracking "the best state ever seen" (not "wherever growth
 stopped") reports it correctly.
+
+The rendered report for this run is checked into the repo at
+[`comps/paper.bh.strict.beam.fullrecursive/rnamap/index.html`](comps/paper.bh.strict.beam.fullrecursive/rnamap/index.html) —
+open it directly (no need to run anything) to see the settings panel,
+per-region stat cards, R1/R2/R3 + per-area regulation dots, and the
+click-to-zoom plots described above.
 
 ### A note on `perms`
 
