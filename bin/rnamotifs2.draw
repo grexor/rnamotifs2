@@ -183,6 +183,9 @@ h1 { font-size: 22px; margin: 0 0 2px; }
             z-index: 1000; align-items: center; justify-content: center; overflow: hidden; }
 .lightbox.open { display: flex; }
 .lightbox img { max-width: 92vw; max-height: 92vh; border-radius: 4px;
+                 background: #fff; /* the plots are saved as transparent PNGs (matplotlib
+                    savefig transparent=True) - fine on the page's white background, but
+                    the lightbox's dark backdrop would otherwise show through them */
                  box-shadow: 0 12px 48px rgba(0,0,0,.5); cursor: zoom-in;
                  transition: transform .08s ease-out; user-select: none; -webkit-user-drag: none; }
 .lightbox img.zoomed { cursor: grab; }
