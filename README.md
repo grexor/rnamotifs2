@@ -131,13 +131,34 @@ written to `beams<n>.tab`. If `use_FDR`, the FDR correction is applied across
 combinations is held to a correspondingly stricter bar.
 
 This costs up to `beam_width` times more work at every step (vs. paying that
-cost only once, at step 0, for `next_cluster_beam`) — still minutes on
-`comps/paper.bh`-sized data with the vectorised search. `comps/paper.bh.strict.beam.fullrecursive`
-(`paper.bh.strict` + `beam_width=5`, `beam_recursive=True`) demonstrates it on
-region r1s: the archive contains several 3-4 motif combinations that kept
-finding a next candidate good enough to extend with, but none of them beat
-the 2-motif cluster `TGTG`+`TCAT` (fisher `2.8e-08`) that the recursive search
-correctly recognises as the actual best answer.
+cost only once, at step 0, for `next_cluster_beam`) — 23 min end to end on
+`comps/paper.bh`, vs. `paper.bh.strict.beam`'s 15 min and plain `paper.bh.strict`'s
+3.5 min (this run also carries `perms=1000` vs. the other two's `200`).
+`comps/paper.bh.strict.beam.fullrecursive` (`paper.bh.strict` +
+`beam_width=5`, `beam_recursive=True`, `perms=1000`) shows all three outcomes
+a step-wise re-ranking search can produce, on the same three regions that
+found anything significant at all:
+
+| region | greedy (`paper.bh.strict`) | top-`k`-restart (`...beam`) | full recursive |
+|---|---|---|---|
+| r1s | `ATTT+TGTG+TCAT`, fisher 1.4e-05 | same as greedy | **`TGTG+TCAT`** (2 motifs), fisher 1.6e-05 |
+| r1e | `TCA+TGCT+TCT`, fisher 3.3e-05 | `TAAC+TCT+TGC+TTC`, fisher 9.5e-08 | `CTGT+TCT+CTT`, fisher 1.2e-07 |
+| r3e | `TCTC+TGT+TCAT+CAT`, fisher 9.4e-04 | same as greedy | **`CATT+TGTG+CATC+CAT`**, fisher 4.5e-06 |
+
+r3e is the clean win recursive search exists for: neither greedy nor
+restarting from a different base motif ever found this combination — only
+re-ranking every beam's candidates jointly, every step, surfaced it, ~200x
+better than the other two methods' shared answer. r1e shows recursive search
+matching (not exceeding) the improvement `next_cluster_beam` already found by
+a different route. r1s is the interesting one: the *raw* 3-motif extension
+`ATTT+TGTG+TCAT` was tried here too (it's in `beams0.tab`) and still cleared
+`cluster_stop_thr`, so a chain kept extending past it — but its FDR-corrected
+q-value came out worse than the 2-motif state one step earlier (`TGTG+TCAT`),
+because that q-value is computed by pooling *all 5 beams'* candidates that
+step (~1,575 tests) rather than one chain's ~315, a correspondingly stricter
+bar. The archive mechanism catches exactly this: growing further isn't always
+better, and only tracking "the best state ever seen" (not "wherever growth
+stopped") reports it correctly.
 
 ### A note on `perms`
 
