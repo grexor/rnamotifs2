@@ -163,7 +163,8 @@ _region_cache = {}
 def _region_data(region, hw):
     """All events of class {region[-1], c}, encoded. Independent of rfilter —
     the caller masks rows per call."""
-    key = (region, id(rnamotifs2.data.data), hw)
+    key = (region, id(rnamotifs2.data.data), hw, rnamotifs2.config.perms,
+           rnamotifs2.perm.generation)
     hit = _region_cache.get(key)
     if hit is not None:
         return hit
@@ -206,6 +207,26 @@ def _region_data(region, hw):
                 a2_seqs=a2_seqs, a3_seqs=a3_seqs,
                 Sa2=Sa2, Sa3=Sa3, Pa2=Pa2, Pa3=Pa3, la2=la2, la3=la3,
                 need_a2=need_a2, need_a3=need_a3)
+
+    # permutation label matrix, built once per region and reused for every
+    # motif: column k tells you, for permutation p, whether the event at rank
+    # k among a motif's "considered" events (see v17) is a random draw of the
+    # target class or of "c" - see the long comment in v17 for why "rank"
+    # rather than "row" is what rnamotifs2.perm.ec_perm actually encodes.
+    perms = rnamotifs2.config.perms
+    if perms > 0:
+        letter = region[-1]
+        n_region = len(rows)
+        dc_arr = np.asarray(rnamotifs2.data.data_class)
+        is_target = np.zeros((perms, n_region), dtype=bool)
+        is_control = np.zeros((perms, n_region), dtype=bool)
+        for p in range(perms):
+            labels = dc_arr[rnamotifs2.perm.ec_perm[p][:n_region]]
+            is_target[p] = labels == letter
+            is_control[p] = labels == "c"
+        data["perm_is_target"] = is_target
+        data["perm_is_control"] = is_control
+
     _region_cache.clear()  # only ever one comparison/region live at a time
     _region_cache[key] = data
     return data
@@ -328,6 +349,22 @@ def v17(comps, genome, region="r1s", motif="YCAY", hw=15, pth=4, rfilter={},
             present["%s.%s" % (ec, eid)] = 1
             if rmax[i] >= 14:
                 rfilter["%s.%s" % (ec, eid)] = 1
+
+    # ---- permutation counts (rnamotifs2.config.perms > 0 only) ---------------
+    # rcounts["<letter>.p<p>"] / rcounts["c.p<p>"] are what compute.rtest reads
+    # back to build p_emp. See the "perm_is_target"/"perm_is_control" comment
+    # in _region_data for the rank-not-row indexing this replicates.
+    if "perm_is_target" in rd:
+        considered_sum_r = (fmat[consider].sum(axis=1) > 0).astype(np.int64)
+        n_considered = considered_sum_r.shape[0]
+        letter = region[-1]
+        IT = rd["perm_is_target"][:, :n_considered].astype(np.int64)
+        IC = rd["perm_is_control"][:, :n_considered].astype(np.int64)
+        target_counts = IT.dot(considered_sum_r)
+        control_counts = IC.dot(considered_sum_r)
+        for p in range(target_counts.shape[0]):
+            rcounts["%s.p%s" % (letter, p)] = int(target_counts[p])
+            rcounts["c.p%s" % p] = int(control_counts[p])
 
     return vectors_sum, rcounts, chosen_h, rfilter, nums, present
 

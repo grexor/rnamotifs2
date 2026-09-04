@@ -58,6 +58,13 @@ def read_config(comps):
     if getattr(m, "cores", None)==None:
         setattr(m, "cores", 20)
 
+    # a "perms=<n>" line in the .config file is parsed onto this (data)
+    # module above, but rnamotifs2.perm / rnamotifs2.compute / assemble_results
+    # all read rnamotifs2.config.perms - keep the two in sync so the config
+    # file setting actually takes effect.
+    if getattr(m, "perms", None) is not None:
+        rnamotifs2.config.perms = m.perms
+
 def read(comps):
     read_config(comps)
     if data_type=="apa":

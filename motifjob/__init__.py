@@ -87,7 +87,7 @@ def run_motif(comps, genome, region, motif, pth, cn, sf, preloaded=False):
     if results is None:
         return None
     area, rcounts, h, rfilter, nums, present = results
-    test_result = rnamotifs2.compute.rtest(comps, genome, motif, rcounts, nums)
+    test_result = rnamotifs2.compute.rtest(comps, genome, motif, rcounts, nums, region[-1])
     out = os.path.join(pickle_folder, "c%s.%s.pickle" % (cn, "_".join(sorted(motif))))
     pickle.dump((area, test_result, h, rfilter, nums, rcounts, present),
                 open(out, "wb"), protocol=2)
@@ -124,7 +124,7 @@ def run_motif_cluster(comps, genome, region, motif, cn, cmotif, pth, sf, preload
     if results is None:
         return None
     area, rcounts, h, rfilter, nums, present = results
-    test_result = rnamotifs2.compute.rtest(comps, genome, search_motif, rcounts, nums)
+    test_result = rnamotifs2.compute.rtest(comps, genome, search_motif, rcounts, nums, region[-1])
     out = os.path.join(pickle_folder, "c%s.%s.filter.%s.pickle" % (cn, "_".join(motif), "_".join(sorted(cmotif))))
     pickle.dump((area, test_result, h, rfilter, nums, rcounts, present),
                 open(out, "wb"), protocol=2)

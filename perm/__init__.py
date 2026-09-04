@@ -8,9 +8,18 @@ np.random.seed(42)
 
 ec_perm = {}
 ec_dist = {}
+generation = 0  # bumped on every compute() call; lets fastsearch cache the
+                # per-region permutation label matrix without going stale if
+                # compute() is ever called again for the same event table
 
 def compute(comps, genome, motif):
+    global generation
+    generation += 1
+    ec_perm.clear()
+    ec_dist.clear()
     print("%s.%s.%s: computing permutations" % (comps, genome, motif))
+    if rnamotifs2.config.perms == 0:
+        return
     lim_s = rnamotifs2.data.data_class.count("s")
     lim_e = lim_s + rnamotifs2.data.data_class.count("e")
     lim_c = lim_e + rnamotifs2.data.data_class.count("c")

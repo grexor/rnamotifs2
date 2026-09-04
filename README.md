@@ -54,6 +54,37 @@ been lifted to GRCh38 / Ensembl 115 with
 `comps/paper.bh/lift_hg19_to_ensembl115.py` (original kept as
 `paper.bh.hg19.tab`). Just run `./run_example.sh`.
 
+### Multiple testing: `comps/paper.bh.strict`
+
+Each cluster-growth step scans up to ~320 candidate motifs and keeps only the
+single best (minimum p-value) one — a real single comparison of `paper.bh`
+runs ~26,000 individual Fisher tests, of which ~70 become "the" reported
+motif for some tree/step. The minimum of many tests is not itself a valid
+p-value (it's biased low), so two corrections are available:
+
+* `perms=<n>` — permutation/bootstrap empirical p-value (`p_emp` column):
+  for each motif, `n` random relabelings of the event classes give a null
+  distribution to compare its own real signal against. Was silently
+  non-functional (a module mismatch meant `perms=` in a `.config` file never
+  reached the code that reads it, and the empirical-p computation itself had
+  a variable-name bug) — both are now fixed, and the per-motif accumulation
+  is vectorised so `perms=200` costs no measurable time per motif.
+* `use_FDR=True` — Benjamini-Hochberg-corrects the `fisher` column within
+  each step's ranking before anything downstream (including the
+  significance thresholds that decide whether a tree keeps growing) reads it.
+
+Neither one corrects for "picked the best of ~320 candidates" on its own —
+that would need permuting labels and rescoring the *entire* candidate set per
+permutation (Westfall-Young / max-T), not yet implemented. They do correct
+the two most misleading things: the reported p understating how many motifs
+were tried (FDR), and whether a motif's own association could plausibly arise
+by chance relabeling (permutation).
+
+`comps/paper.bh.strict` is the same lifted table as `paper.bh` with both
+turned on (`perms=200`, `use_FDR=True`) — run it with
+`./run_example.sh paper.bh.strict` and compare its `results0.tab` `fisher` /
+`p_emp` columns to `paper.bh`'s.
+
 ## Authors
 
 [RNAmotifs2](https://github.com/grexor/rnamotifs2) is maintained by [Gregor Rot](https://grexor.github.io) in collaboration with several research laboratories worldwide.

@@ -85,7 +85,12 @@ def test(comps, genome, motif, rcounts, nums): # rcounts
             test_results["%s.%s" % (rt, event_class)] = [pval, pemp, g]
     return test_results
 
-def rtest(comps, genome, motif, rcounts, nums): # rcounts
+def rtest(comps, genome, motif, rcounts, nums, event_class=None): # rcounts
+    # event_class: the raw class letter ("s" or "e") this region's "t" bucket
+    # maps to - needed to read back the rcounts["<letter>.p<perm>"] counts that
+    # search.v17 / fastsearch.v17 accumulate per permutation. Without it the
+    # permutation lookups below silently miss (rcounts.get(...) -> 0) and
+    # every p_emp comes out as 1.0, so pass it whenever config.perms>0.
     print("%s.%s.%s: fisher test on real and perm data" % (comps, genome, motif))
     val_class = rcounts.get("t", 0)
     val_control = rcounts.get("c", 0)
