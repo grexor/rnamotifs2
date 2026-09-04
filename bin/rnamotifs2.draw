@@ -171,9 +171,28 @@ h1 { font-size: 22px; margin: 0 0 2px; }
 
 .images { display: flex; gap: 10px; flex-wrap: wrap; }
 .images figure { margin: 0; }
-.images img { width: 250px; display: block; border-radius: 6px; border: 1px solid var(--line); }
+.images img { width: 250px; display: block; border-radius: 6px; border: 1px solid var(--line);
+              cursor: zoom-in; transition: opacity .1s; }
+.images img:hover { opacity: .85; }
 .images figcaption { font-size: 10.5px; color: var(--sub); text-align: center; margin-top: 4px; }
 .images a { text-decoration: none; }
+
+/* lightbox: click a thumbnail to open, wheel to zoom, drag to pan once zoomed,
+   double-click/Escape/backdrop click to reset/close - no external libraries */
+.lightbox { display: none; position: fixed; inset: 0; background: rgba(10,14,20,.9);
+            z-index: 1000; align-items: center; justify-content: center; overflow: hidden; }
+.lightbox.open { display: flex; }
+.lightbox img { max-width: 92vw; max-height: 92vh; border-radius: 4px;
+                 box-shadow: 0 12px 48px rgba(0,0,0,.5); cursor: zoom-in;
+                 transition: transform .08s ease-out; user-select: none; -webkit-user-drag: none; }
+.lightbox img.zoomed { cursor: grab; }
+.lightbox img.dragging { cursor: grabbing; transition: none; }
+.lightbox .hint { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+                   color: rgba(255,255,255,.55); font-size: 11.5px; letter-spacing: .02em; }
+.lightbox .close { position: fixed; top: 16px; right: 22px; width: 36px; height: 36px;
+                     border-radius: 50%; background: rgba(255,255,255,.12); color: #fff;
+                     font-size: 20px; line-height: 36px; text-align: center; cursor: pointer; }
+.lightbox .close:hover { background: rgba(255,255,255,.22); }
 """
 
 parts = []
@@ -227,7 +246,7 @@ for region in regions:
         for a in range(0, 4):
             image_filename = "%s_tree%s_area%s.png?nocache=%s" % (region, index, a+1, nocache)
             img_html.append(
-                "<figure><a href=%s target=_blank><img src=%s></a>"
+                "<figure><a href=%s onclick=\"return openLightbox(event, this.href)\"><img src=%s></a>"
                 "<figcaption>area %d (0=%s)</figcaption></figure>" % (
                     image_filename, image_filename, a+1, area_captions[a]))
 
@@ -250,6 +269,72 @@ for region in regions:
 if len(regions) == 0 or all(len(configs[r]) == 0 for r in regions):
     parts.append("<div class='panel'>No region reached a significant motif cluster.</div>")
 
+LIGHTBOX = """
+<div id="lightbox" class="lightbox" onclick="lbBackdrop(event)">
+  <div class="close" onclick="lbClose(event)">&times;</div>
+  <img id="lightbox-img">
+  <div class="hint">scroll to zoom &middot; drag to pan &middot; double-click or Esc to reset/close</div>
+</div>
+<script>
+(function () {
+  var box = document.getElementById('lightbox');
+  var img = document.getElementById('lightbox-img');
+  var scale = 1, panX = 0, panY = 0;
+  var dragging = false, moved = false, startX = 0, startY = 0, offX = 0, offY = 0;
+
+  function apply() {
+    img.style.transform = 'translate(' + panX + 'px,' + panY + 'px) scale(' + scale + ')';
+    img.classList.toggle('zoomed', scale > 1);
+  }
+  function reset() { scale = 1; panX = 0; panY = 0; apply(); }
+
+  window.openLightbox = function (ev, src) {
+    ev.preventDefault();
+    img.src = src;
+    reset();
+    box.classList.add('open');
+    return false;
+  };
+  window.lbClose = function (ev) { ev.stopPropagation(); box.classList.remove('open'); };
+  window.lbBackdrop = function (ev) { if (ev.target === box) box.classList.remove('open'); };
+
+  img.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    scale = Math.min(6, Math.max(1, scale * (e.deltaY < 0 ? 1.15 : 1 / 1.15)));
+    if (scale === 1) { panX = 0; panY = 0; }
+    apply();
+  }, { passive: false });
+
+  img.addEventListener('dblclick', reset);
+
+  img.addEventListener('mousedown', function (e) {
+    dragging = true; moved = false;
+    startX = e.clientX; startY = e.clientY; offX = panX; offY = panY;
+    img.classList.add('dragging');
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', function (e) {
+    if (!dragging) return;
+    var dx = e.clientX - startX, dy = e.clientY - startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+    if (scale > 1) { panX = offX + dx; panY = offY + dy; apply(); }
+  });
+  window.addEventListener('mouseup', function () {
+    if (dragging && !moved) { // plain click, no drag: toggle zoom in/out
+      if (scale > 1) { scale = 1; panX = 0; panY = 0; } else { scale = 2.5; }
+      apply();
+    }
+    dragging = false;
+    img.classList.remove('dragging');
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (scale > 1) reset(); else box.classList.remove('open');
+  });
+})();
+</script>
+"""
+
 doc = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -259,9 +344,10 @@ doc = """<!DOCTYPE html>
 </head>
 <body>
 %s
+%s
 </body>
 </html>
-""" % (html.escape(args.comps), CSS, "\n".join(parts))
+""" % (html.escape(args.comps), CSS, "\n".join(parts), LIGHTBOX)
 
 with open(os.path.join(comps_folder, "rnamap", "index.html"), "wt") as f:
     f.write(doc)
