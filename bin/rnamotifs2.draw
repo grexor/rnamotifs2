@@ -42,20 +42,32 @@ elif beam_recursive:
 else:
     search_mode = "beam search, restart-only (beam_width=%d)" % beam_width
 
-settings = [
-    ("comparison", args.comps),
-    ("data file", os.path.basename(comps_tab)),
-    ("config file", os.path.basename(comps_config) if os.path.exists(comps_config) else "(defaults)"),
-    ("genome", str(getattr(rnamotifs2.data, "genome", "?"))),
-    ("data type", str(getattr(rnamotifs2.data, "data_type", "?"))),
-    ("half-window (hw)", str(getattr(rnamotifs2.data, "hw", "?"))),
-    ("events", "silenced=%s, enhanced=%s, control=%s" % (num_s, num_e, num_c)),
-    ("motif search", search_mode),
-    ("permutations", "%d%s" % (perms, "" if perms > 0 else " (off - p_emp not meaningful)")),
-    ("multiple-testing correction", "Benjamini-Hochberg FDR" if use_fdr else "none (raw Fisher p-values)"),
-    ("base motif threshold", str(getattr(rnamotifs2.data, "base_motif_thr", "?"))),
-    ("cluster stop threshold", str(getattr(rnamotifs2.data, "cluster_stop_thr", "?"))),
-    ("cores", str(getattr(rnamotifs2.data, "cores", "?"))),
+settings_sections = [
+    ("Input", [
+        ("comparison", args.comps),
+        ("data file", os.path.basename(comps_tab)),
+        ("config file", os.path.basename(comps_config) if os.path.exists(comps_config) else "(defaults)"),
+        ("genome", str(getattr(rnamotifs2.data, "genome", "?"))),
+        ("data type", str(getattr(rnamotifs2.data, "data_type", "?"))),
+    ]),
+    ("Events", [
+        ("silenced / repressed", str(num_s)),
+        ("enhanced", str(num_e)),
+        ("control", str(num_c)),
+        ("half-window (hw)", str(getattr(rnamotifs2.data, "hw", "?"))),
+    ]),
+    ("Search strategy", [
+        ("motif search", search_mode),
+        ("base motif threshold", str(getattr(rnamotifs2.data, "base_motif_thr", "?"))),
+        ("cluster stop threshold", str(getattr(rnamotifs2.data, "cluster_stop_thr", "?"))),
+    ]),
+    ("Statistics", [
+        ("permutations", "%d%s" % (perms, "" if perms > 0 else " (off)")),
+        ("multiple-testing correction", "Benjamini-Hochberg FDR" if use_fdr else "none (raw Fisher p-values)"),
+    ]),
+    ("Compute", [
+        ("cores", str(getattr(rnamotifs2.data, "cores", "?"))),
+    ]),
 ]
 
 configs = {}
@@ -140,6 +152,22 @@ def region_dots_html(region):
                     (cls, r.upper()))
     return "<div class='region-dots'>%s</div>" % "".join(dots)
 
+def area_is_regulated(region, a):
+    """Does area plot `a` (0..3, matching the area1..area4 filenames) carry
+    the colored highlight rectangle drawn inside the plot itself
+    (draw.highlight_region, called from draw.area for area in {1,2})? This is
+    a static property of (region prefix, area index) - see draw.area: r1's
+    window falls inside area index 1, r3's inside area index 2, and r2's
+    straddles the boundary between the two exons so it lands in both."""
+    prefix = region[:-1]
+    if prefix == "r1":
+        return a == 1
+    if prefix == "r2":
+        return a in (1, 2)
+    if prefix == "r3":
+        return a == 2
+    return False
+
 CSS = """
 :root {
     --ink: #1b2430; --sub: #5b6b7c; --line: #e3e8ee; --bg: #f6f8fa; --card: #ffffff;
@@ -154,13 +182,17 @@ h1 { font-size: 22px; margin: 0 0 2px; }
 .mono { font-family: "SF Mono", Menlo, Consolas, monospace; }
 
 .panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-         padding: 18px 22px; margin-bottom: 28px; box-shadow: 0 1px 2px rgba(20,30,40,.04); }
+         padding: 20px 24px; margin-bottom: 28px; box-shadow: 0 1px 2px rgba(20,30,40,.04); }
 .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em;
-            color: var(--sub); margin: 0 0 14px; }
-.settings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-                 gap: 10px 24px; font-size: 13px; }
-.settings-grid .k { color: var(--sub); }
-.settings-grid .v { font-weight: 600; }
+            color: var(--sub); margin: 0 0 16px; }
+.settings-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                      gap: 20px 28px; }
+.settings-section h3 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em;
+                        color: var(--blue); margin: 0 0 10px; padding-bottom: 6px;
+                        border-bottom: 1px solid var(--line); }
+.settings-section dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; margin: 0; }
+.settings-section dt { color: var(--sub); font-size: 12.5px; align-self: center; }
+.settings-section dd { margin: 0; font-weight: 600; font-size: 13px; text-align: right; }
 
 .region-heading { font-size: 15px; font-weight: 700; margin: 30px 0 12px; color: var(--ink); }
 .region-heading .badge { display: inline-block; font-size: 11px; font-weight: 700; color: #fff;
@@ -170,10 +202,11 @@ h1 { font-size: 22px; margin: 0 0 2px; }
 
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
         padding: 16px 20px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(20,30,40,.04); }
-.card-top { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap;
+.card-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
             gap: 8px 20px; margin-bottom: 10px; }
+.card-title { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .cluster-name { font-size: 17px; font-weight: 700; }
-.tree-link { font-size: 12px; color: var(--sub); }
+.tree-link { font-size: 12px; color: var(--sub); white-space: nowrap; }
 .tree-link a { color: var(--blue); }
 
 .region-dots { display: flex; gap: 12px; }
@@ -192,7 +225,7 @@ h1 { font-size: 22px; margin: 0 0 2px; }
 .stat-grid .value { font-weight: 700; font-size: 14px; }
 
 .images { display: flex; gap: 10px; flex-wrap: wrap; }
-.images figure { margin: 0; }
+.images figure { margin: 0; position: relative; }
 .images img { width: 250px; display: block; border-radius: 6px; border: 3px solid var(--line);
               cursor: zoom-in; transition: opacity .1s; }
 .images img:hover { opacity: .85; }
@@ -200,8 +233,14 @@ h1 { font-size: 22px; margin: 0 0 2px; }
 .images a { text-decoration: none; }
 /* regulation direction, at a glance: blue=silenced/repressed, red=enhanced -
    same convention as the highlight border drawn inside the plots themselves */
-.thumb-s, .lightbox img.thumb-s { border-color: var(--blue); }
-.thumb-e, .lightbox img.thumb-e { border-color: var(--red); }
+.thumb-s { border-color: var(--blue); }
+.thumb-e { border-color: var(--red); }
+/* one of these per area plot, only on the area(s) that actually carry the
+   highlighted window inside the plot (see area_is_regulated()) */
+.area-dot { position: absolute; top: 8px; right: 8px; width: 13px; height: 13px;
+            border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(20,30,40,.2); }
+.area-dot.on-s { background: var(--blue); }
+.area-dot.on-e { background: var(--red); }
 
 /* lightbox: click a thumbnail to open, wheel to zoom, drag to pan once zoomed,
    double-click/Escape/backdrop click to reset/close - no external libraries */
@@ -212,7 +251,6 @@ h1 { font-size: 22px; margin: 0 0 2px; }
                  background: #fff; /* the plots are saved as transparent PNGs (matplotlib
                     savefig transparent=True) - fine on the page's white background, but
                     the lightbox's dark backdrop would otherwise show through them */
-                 border: 3px solid transparent;
                  box-shadow: 0 12px 48px rgba(0,0,0,.5); cursor: zoom-in;
                  transition: transform .08s ease-out; user-select: none; -webkit-user-drag: none; }
 .lightbox img.zoomed { cursor: grab; }
@@ -229,9 +267,12 @@ parts = []
 parts.append("<h1>RNAmotifs2 &mdash; %s</h1>" % html.escape(args.comps))
 parts.append("<div class='sub'>generated %s %s</div>" % (time.strftime("%d.%m.%Y"), time.strftime("%H:%M:%S")))
 
-parts.append("<div class='panel'><h2>Run settings</h2><div class='settings-grid'>")
-for k, v in settings:
-    parts.append("<div class='k'>%s</div><div class='v mono'>%s</div>" % (html.escape(k), html.escape(str(v))))
+parts.append("<div class='panel'><h2>Run settings</h2><div class='settings-sections'>")
+for section, kv in settings_sections:
+    parts.append("<div class='settings-section'><h3>%s</h3><dl>" % html.escape(section))
+    for k, v in kv:
+        parts.append("<dt>%s</dt><dd class='mono'>%s</dd>" % (html.escape(k), html.escape(str(v))))
+    parts.append("</dl></div>")
 parts.append("</div></div>")
 
 for region in regions:
@@ -275,17 +316,20 @@ for region in regions:
         area_captions = {0: "skip.start", 1: "in.start", 2: "in.stop", 3: "skip.stop"}
         for a in range(0, 4):
             image_filename = "%s_tree%s_area%s.png?nocache=%s" % (region, index, a+1, nocache)
+            dot = "<span class='area-dot on-%s'></span>" % badge_class if area_is_regulated(region, a) else ""
             img_html.append(
-                "<figure><a href=%s onclick=\"return openLightbox(event, this.href, '%s')\">"
-                "<img class='thumb-%s' src=%s></a>"
+                "<figure><a href=%s onclick=\"return openLightbox(event, this.href)\">"
+                "<img class='thumb-%s' src=%s></a>%s"
                 "<figcaption>area %d (0=%s)</figcaption></figure>" % (
-                    image_filename, badge_class, badge_class, image_filename, a+1, area_captions[a]))
+                    image_filename, badge_class, image_filename, dot, a+1, area_captions[a]))
 
         rows_html.append("""
 <div class='card'>
   <div class='card-top'>
-    <div class='cluster-name mono'>%s</div>
-    %s
+    <div class='card-title'>
+      <div class='cluster-name mono'>%s</div>
+      %s
+    </div>
     <div class='tree-link'><a href=%s target=_new>tree%s.tab</a> on expressRNA</div>
   </div>
   <div class='stat-grid'>%s</div>
@@ -320,10 +364,9 @@ LIGHTBOX = """
   }
   function reset() { scale = 1; panX = 0; panY = 0; apply(); }
 
-  window.openLightbox = function (ev, src, dir) {
+  window.openLightbox = function (ev, src) {
     ev.preventDefault();
     img.src = src;
-    img.className = dir ? 'thumb-' + dir : '';
     reset();
     box.classList.add('open');
     return false;
