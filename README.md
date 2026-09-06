@@ -12,17 +12,32 @@ However, since several proteins can regulate pre-mRNA processing by binding simu
 
 Finally, we compute an enrichment score (ES) on the super-imposed sequences of all the features (exons, polyA sites) and draw a motif regulatory RNA-map.
 
-## Installation and running
+## Installation
 
 RNAmotifs2 runs on Python 3 and depends on [pybio](https://github.com/grexor/pybio)
-(genome handling), plus `numpy`, `scipy`, `matplotlib`, `fisher` and
-`pyliftover` (only for lifting example coordinates).
+(genome handling), plus `numpy`, `scipy`, `matplotlib` and `fisher`
+(`pyliftover` is only needed for the example-coordinate lift script).
+
+```bash
+pip install rnamotifs2
+```
+
+or from a clone:
+
+```bash
+git clone https://github.com/grexor/rnamotifs2
+pip install ./rnamotifs2
+```
+
+`pybio` itself needs `pysam`; on conda/mamba:
 
 ```bash
 micromamba create -n rnamotifs2 -c conda-forge -c bioconda python=3.12 \
-    numpy scipy matplotlib pandas pysam psutil beautifulsoup4 requests pip
-micromamba run -n rnamotifs2 pip install fisher pyliftover pybio
+    numpy scipy matplotlib pysam psutil beautifulsoup4 requests pip
+micromamba run -n rnamotifs2 pip install rnamotifs2
 ```
+
+## Running
 
 A comparison lives in `comps/<name>/` and needs two files:
 
@@ -32,10 +47,22 @@ A comparison lives in `comps/<name>/` and needs two files:
 * `<name>.config` — `data_type=splice`, `genome=<species>.<version>`
   (e.g. `homo_sapiens.ensembl115`), `hw=15`, `cores=<n>`
 
-Run the whole analysis (motif search, cluster growth, RNA maps) with:
+`comps/` is resolved relative to the working directory, or from
+`$RNAMOTIFS2_COMPS`. Run the whole analysis (motif search, cluster growth,
+RNA maps) with:
 
 ```bash
-./run_example.sh <name>        # defaults to paper.bh
+rnamotifs2 run -comps <name>            # or: ./run_example.sh <name>
+rnamotifs2 draw -comps <name>           # rebuild just the RNA-map report
+```
+
+### As a library (expressRNA)
+
+```python
+import rnamotifs2
+rnamotifs2.path.set_comps_folder("/path/to/comps")   # or export RNAMOTIFS2_COMPS
+rnamotifs2.cli.run("my_comparison")                  # full pipeline
+rnamotifs2.report.build("my_comparison")             # just the report
 ```
 
 Output lands in `comps/<name>/`: per-region `results*.tab` / `tree*.tab` and

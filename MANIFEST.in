@@ -1,0 +1,4 @@
+include rnamotifs2/version
+include LICENSE
+include README.md
+recursive-include media *

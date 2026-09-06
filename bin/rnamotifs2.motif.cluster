@@ -1,8 +1,0 @@
-#!/usr/bin/env python3
-"""CLI wrapper around rnamotifs2.motifjob.run_motif_cluster (kept for expressRNA)."""
-import sys
-import rnamotifs2
-
-comps, genome, region, motif, cn, cmotif, pth, sf = sys.argv[1:9]
-rnamotifs2.motifjob.run_motif_cluster(comps, genome, region, motif.split("_"),
-                                      int(cn), cmotif.split("_"), float(pth), sf)

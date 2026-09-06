@@ -13,9 +13,12 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))
+REPO = os.path.dirname(HERE)
+sys.path.insert(0, REPO)  # so `import rnamotifs2` finds the in-repo package
 
 import rnamotifs2
+
+rnamotifs2.path.set_comps_folder(os.path.join(REPO, "comps"))
 
 COMPS, REGION, GENOME = "paper.bh", "r1s", "homo_sapiens.ensembl115"
 GOLDEN = os.path.join(HERE, "golden")

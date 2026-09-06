@@ -19,11 +19,17 @@ from . import cluster
 from . import results
 from . import motifjob
 from . import pool
+from . import report
+from . import cli
 import random
 import operator
 import pickle
 import shutil
 random.seed(42)
+
+version = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "version"), "rt").read().strip()
+
+main = cli.main  # console-script entry point
 
 path.init()
 
