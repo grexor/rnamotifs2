@@ -1,5 +1,10 @@
 old*
 201506_splicing_tables_backup
 *.pyc
+__pycache__/
 comps
 comps.paper
+build/
+dist/
+*.egg-info/
+.eggs/
